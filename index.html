@@ -523,7 +523,16 @@ function fmtDT(iso){
   return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
-async function loadCustomers(){
+// CACHE SİSTEMİ — sayfa geçişlerini hızlandırır
+let _custCacheTime = 0;
+const CACHE_TTL = 30000; // 30 saniye
+function invalidateCache() { _custCacheTime = 0; }
+
+async function loadCustomers(force=false){
+  if(!force && customers.length > 0 && (Date.now() - _custCacheTime) < CACHE_TTL) {
+    filtered=[...customers];
+    return;
+  }
   try{
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getCustomers',token:CU.token})});
     const data=await res.json();
@@ -555,6 +564,7 @@ async function loadCustomers(){
       callTotal:r.call_total||0,callReached:r.call_reached||0,reminderDate:r.call_reminder_date||'',appTotal:r.app_total||0,appPending:r.app_pending||0,appPendingNoDate:r.app_pending_no_date||0,appPendingData:JSON.parse(r.app_pending_data||'[]'),visaResult:r.visa_result||'',visaStartDate:r.visa_start_date||'',visaEndDate:r.visa_end_date||''
     }));
     filtered=[...customers];
+    _custCacheTime = Date.now(); // cache zamanını güncelle
   }catch(e){
     console.error('loadCustomers hatası:',e);
     customers=[];filtered=[];
@@ -1008,6 +1018,8 @@ async function initApp(){
     <button class="btn btn-primary" onclick="openModal()">+ Yeni Müşteri</button>
   `;
   const allowedPages=isM?['dashboard','today','customers','pipeline','consulate','completed','cancelled','notinterested','muhasebe','performance','instagram','refunds','users','account']:['today','customers','pipeline','sold','account'];
+  // Yetkisiz sayfa erişimini engelle
+  if(showPage && !allowedPages.includes(localStorage.getItem('vizecrm_lastpage'))) localStorage.removeItem('vizecrm_lastpage');
   const savedPage=localStorage.getItem('vizecrm_lastpage');
   const startPage=(savedPage&&allowedPages.includes(savedPage))?savedPage:(isM?'dashboard':'customers');
   await showPage(startPage);
@@ -1062,7 +1074,7 @@ function gSearch(q){
   }else if(document.getElementById('cons-table')){
     // Konsolosluk Takibi sayfası — üstteki genel arama, sayfanın kendi arama filtresine bağlanır
     consSearch=q;
-    renderConsulate();
+    renderConsulateTable(); // sadece tabloyu güncelle, focus kaybolmasın
   }else if(document.getElementById('sold-body')){
     // Satışlarım sayfası — üstteki arama kutusu burada da çalışsın
     soldSearch=q;
@@ -2295,7 +2307,56 @@ function consFilterChange(field,value){
   else if(field==='country')consCountry=value;
   else if(field==='rep')consRep=value;
   else if(field==='day')consDay=parseInt(value)||0;
-  renderConsulate();
+  // Arama alanından geliyorsa sadece tabloyu güncelle (focus kaybolmasın)
+  if(field==='search') renderConsulateTable();
+  else renderConsulate();
+}
+
+function renderConsulateTable(){
+  // Sadece tablo içeriğini güncelle - filtre barına dokunma
+  const sq=consSearch.toLowerCase().trim();
+  const baseList=customers.filter(c=>CONSULATE_WAIT_S.includes(c.status));
+  const list=baseList.filter(c=>{
+    if(sq&&!((c.name&&c.name.toLowerCase().includes(sq))||(c.id&&c.id.toLowerCase().includes(sq))||(c.phone&&c.phone.includes(sq))))return false;
+    if(consStatus&&c.status!==consStatus)return false;
+    if(consCountry&&c.country!==consCountry)return false;
+    if(consRep&&c.rep!==consRep&&c.evrakRep!==consRep&&c.randevuRep!==consRep)return false;
+    if(consDay&&(c.consulateDays??c.days)<consDay)return false;
+    return true;
+  }).sort((a,b)=>(b.consulateDays??b.days)-(a.consulateDays??a.days));
+  const hasFilter=consSearch||consStatus||consCountry||consRep||consDay;
+  function rowColor(d){
+    if(d>=45) return {bg:'var(--red-bg)',fg:'var(--red)',label:'🔴 '+d+' gün'};
+    if(d>=30) return {bg:'var(--amber-bg)',fg:'var(--amber)',label:'🟡 '+d+' gün'};
+    return {bg:'',fg:'var(--text2)',label:d+' gün'};
+  }
+  const tbody=document.getElementById('cons-tbody');
+  const countEl=document.getElementById('cons-count');
+  if(tbody) tbody.innerHTML=list.map(c=>{
+    const rc=rowColor(c.consulateDays??c.days);
+    return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer;background:${rc.bg}">
+      <td>${c.id}</td>
+      <td><b>${c.name}</b></td>
+      <td><a class="phone-link" href="tel:${c.phone}" onclick="event.stopPropagation()">${c.phone}</a></td>
+      <td>${c.country||'—'}</td>
+      <td><span class="badge ${SCLS[c.status]||'b-lead'}">${c.status}</span></td>
+      <td style="font-size:11px;line-height:1.7">
+        <div><span style="color:#2563EB;font-weight:600">📞 Satış:</span> ${c.rep||'—'}</div>
+        <div><span style="color:#D97706;font-weight:600">📄 Evrak:</span> ${c.evrakRep||'—'}</div>
+        <div><span style="color:#7C3AED;font-weight:600">📅 Randevu:</span> ${c.randevuRep||'—'}</div>
+      </td>
+      <td style="font-weight:700;color:${rc.fg}">${rc.label}</td>
+      ${CU.role==='management'?`<td onclick="event.stopPropagation()">
+        <select id="vr-${c.id}" class="sel" style="font-size:11px;padding:3px 6px">
+          <option value="">Sonuç gir...</option>
+          <option value="Onaylandı" ${c.visaResult==='Onaylandı'?'selected':''}>✅ Onaylandı</option>
+          <option value="Reddedildi" ${c.visaResult==='Reddedildi'?'selected':''}>❌ Reddedildi</option>
+        </select>
+        <button class="btn btn-primary btn-sm" style="font-size:10px;padding:3px 8px;margin-top:2px" onclick="saveVisaResult('${c.id}')">✓ Kaydet</button>
+      </td>`:''}
+    </tr>`;
+  }).join('');
+  if(countEl) countEl.textContent=list.length+(hasFilter?' / '+baseList.length:'')+' Müşteri Sonuç Bekliyor';
 }
 
 function renderConsulate(){
@@ -2345,7 +2406,7 @@ function renderConsulate(){
   </div>
   <div class="tbl-wrap">
     <div class="tbl-toolbar">
-      <div class="tbl-label">${list.length}${hasFilter?' / '+baseList.length:''} Müşteri Sonuç Bekliyor</div>
+      <div class="tbl-label" id="cons-count">${list.length}${hasFilter?' / '+baseList.length:''} Müşteri Sonuç Bekliyor</div>
       <button class="btn btn-ghost btn-sm" onclick="exportConsulateExcel()">📥 Excel</button>
     </div>
     <div style="overflow-x:auto">
@@ -2353,7 +2414,7 @@ function renderConsulate(){
       <thead><tr>
         <th>Dosya No</th><th>Ad Soyad</th><th>Telefon</th><th>Ülke</th><th>Aşama</th><th>Süreç Boyunca Sorumlular</th><th>Bekleme Süresi</th>${CU.role==='management'?'<th>Vize Sonucu</th>':''}
       </tr></thead>
-      <tbody>
+      <tbody id="cons-tbody">
         ${list.map(c=>{
           const rc=rowColor(c.consulateDays??c.days);
           const visaBadge = c.visaResult==='Onaylandı'
@@ -5296,7 +5357,7 @@ async function updatePayment(id){
       const msg=typeof d.error==='string'?d.error:(d.error&&d.error.message)||'Kaydedilemedi';
       if(msg.length>60)alert('⚠️ '+msg);else toast('Hata: '+msg,'red');return;
     }
-    await loadCustomers();await openPanel(id);
+    invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Ödeme bilgileri güncellendi','green');
   }catch(e){toast('Bağlantı hatası','red');}
@@ -5368,7 +5429,7 @@ async function deleteCustomer(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteCustomer',customerId:id,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Silinemedi'),'red');return;}
-    await loadCustomers();closePanel();
+    invalidateCache();await loadCustomers(true);closePanel();
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast('🗑 '+name+' silindi','red');
@@ -5475,7 +5536,7 @@ async function moveStatus(id,ns){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateCustomerStatus',customerId:id,newStatus:ns,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('⚠️ '+(d.error||'İşlem yapılamadı'),'red');return;}
-    await loadCustomers();closePanel();
+    invalidateCache();await loadCustomers(true);closePanel();
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast('✓ Aşama: '+ns,'green');
@@ -5584,7 +5645,7 @@ async function addCustomer(){
     closeModal();
     toast('✓ '+name+' eklendi — '+d.id+' ('+d.assignedTo+'\'a atandı)','green');
     ['nm-name','nm-phone','nm-email','nm-fee','nm-pre','nm-rem'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
-    loadCustomers().then(()=>{if(document.getElementById('cust-tbody'))renderRows();if(document.getElementById('kanban'))renderPipeline();});
+    invalidateCache();loadCustomers(true).then(()=>{if(document.getElementById('cust-tbody'))renderRows();if(document.getElementById('kanban'))renderPipeline();});
   }catch(e){
     toast('Sunucu yanıt hatası — lütfen tekrar deneyin','red');
     if(btn){btn.disabled=false;btn.textContent='✓ Müşteriyi Kaydet';}
