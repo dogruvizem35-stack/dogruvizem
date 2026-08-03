@@ -2240,7 +2240,7 @@ async function getPortalLink(custId, forceNew) {
     const res = await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'generatePortalToken',customerId:custId,forceNewToken:forceNew,token:CU.token})});
     const d = await res.json();
     if (!d.success) { toast('Link oluşturulamadı','red'); return; }
-    const link = window.location.origin + '/vizecrm/portal.html?t=' + d.token;
+    const link = 'https://dogruvizem35-stack.github.io/dogruvizem/portal.html?t=' + d.token;
     const el = document.getElementById('portal-link-'+custId);
     if (el) el.innerHTML = '🔗 <a href="'+link+'" target="_blank" style="color:var(--accent)">'+link+'</a>';
     navigator.clipboard?.writeText(link);
