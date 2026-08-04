@@ -42,7 +42,7 @@ async function signInUser(username, password) {
     return data;  // { user, token }
   } catch(e) {
     console.error('Edge Function login hatası:', e);
-    return { error: 'Bağlantı hatası. İnternet bağlantınızı kontrol edin.' };
+    return { error: 'Sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edip tekrar deneyin.' };
   }
 }
 </script>
@@ -331,6 +331,55 @@ textarea.fi2{resize:vertical}
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px}
 
 @media(max-width:900px){.stats-grid,.stats-grid-5{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}}
+
+/* ============================================================
+   MOBİL GÖRÜNÜM — 768px ve altı
+   ============================================================ */
+@media(max-width:768px){
+  /* Sidebar gizle, üstten hamburger menü */
+  .sidebar{display:none;position:fixed;top:0;left:0;height:100vh;z-index:9000;width:260px;transform:translateX(-260px);transition:transform 0.3s}
+  .sidebar.mobile-open{display:flex;transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.3)}
+  .main-area{margin-left:0!important;width:100%}
+  
+  /* Topbar */
+  .topbar{padding:0 12px;gap:8px}
+  #tb-search-wrap{display:none!important}
+  .topbar .btn{font-size:12px;padding:6px 10px}
+  
+  /* Hamburger butonu */
+  #mobile-menu-btn{display:flex!important}
+  
+  /* Tablo yerine kart görünümü */
+  .tbl thead{display:none}
+  .tbl tr{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:12px}
+  .tbl td{border:none;padding:4px 0;font-size:13px}
+  .tbl td::before{content:attr(data-label);font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px}
+  
+  /* Panel */
+  #detail-panel{width:100%!important;right:-100%!important}
+  #detail-panel.open{right:0!important}
+  
+  /* Dashboard kartları */
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important}
+  .stats-grid-5{grid-template-columns:repeat(2,1fr)!important}
+  
+  /* Modal */
+  .modal-box{width:95vw!important;padding:18px!important}
+  
+  /* Kanban */
+  .k-col{min-width:85vw!important;max-width:85vw!important}
+  
+  /* Sayfa içi butonlar */
+  .tbl-toolbar{flex-wrap:wrap;gap:6px}
+  
+  /* Login */
+  .login-card{width:95vw!important;padding:28px 20px!important}
+}
+
+/* Overlay — mobil menü açıkken arkaplanı karart */
+#mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8999}
+#mobile-overlay.open{display:block}
+#mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--text);font-size:20px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -342,6 +391,7 @@ if (localStorage.getItem('vizecrm_token')) {
 </script>
 
 <!-- LOGIN -->
+<div id="mobile-overlay" onclick="toggleMobileMenu()"></div>
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
@@ -401,6 +451,7 @@ if (localStorage.getItem('vizecrm_token')) {
 
   <div class="main">
     <div class="topbar">
+      <button id="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
       <div class="topbar-title" id="page-title">Dashboard</div>
       <div class="topbar-right" id="topbar-right"></div>
     </div>
@@ -655,7 +706,7 @@ async function setReminder(custId, date){
     renderRows();
     if(document.querySelector('[id^="panel-"]')) await openPanel(custId);
     toast(date?('&#x1F514; '+fmtDate(date)+' tarihinde aranacak'):'Hatırlatıcı kaldırıldı',date?'green':'amber');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 
@@ -879,6 +930,33 @@ function resetAllFilters(){
   renderCusts();
 }
 
+// ============================================================
+// MERKEZİ HATA YÖNETİMİ
+// ============================================================
+function handleError(e, context='') {
+  let msg = '';
+  if (!navigator.onLine) {
+    msg = '📶 İnternet bağlantısı yok';
+  } else if (e && e.message && (e.message.includes('Failed to fetch') || e.message.includes('fetch'))) {
+    msg = '🔌 Sunucuya ulaşılamıyor — biraz bekleyip tekrar deneyin';
+  } else if (e && e.message && e.message.includes('timeout')) {
+    msg = '⏱ İstek zaman aşımına uğradı — tekrar deneyin';
+  } else if (context) {
+    msg = `❌ ${context} işlemi başarısız — tekrar deneyin`;
+  } else {
+    msg = '❌ Beklenmedik hata — sayfayı yenileyip tekrar deneyin';
+  }
+  toast(msg, 'red');
+  console.error('[CRM Hata]', context || '', e);
+}
+
+function handleApiError(d, context='') {
+  if (!d || !d.error) return;
+  const err = typeof d.error === 'string' ? d.error : (d.error?.message || JSON.stringify(d.error));
+  toast('❌ ' + err, 'red');
+  console.error('[API Hata]', context, d.error);
+}
+
 function toast(msg,type='blue'){
   const wrap=document.getElementById('toast-wrap');
   const t=document.createElement('div');
@@ -999,6 +1077,15 @@ async function doLogin(){
   document.getElementById('app').style.display='block';
   await initApp();
 }
+function toggleMobileMenu(){
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('mobile-overlay');
+  if(!sb || !ov) return;
+  const isOpen = sb.classList.contains('mobile-open');
+  sb.classList.toggle('mobile-open', !isOpen);
+  ov.classList.toggle('open', !isOpen);
+}
+
 function doLogout(){
   if(CU&&CU.token){
     try{ fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logout',token:CU.token})}).catch(()=>{}); }catch(e){}
@@ -1083,6 +1170,9 @@ let navSeq = 0;
 // ============================================================
 
 async function showPage(p){
+  // Mobil menüyü kapat
+  document.querySelector('.sidebar')?.classList.remove('mobile-open');
+  document.getElementById('mobile-overlay')?.classList.remove('open');
   const mySeq = ++navSeq;
   document.getElementById('main-content').innerHTML='<div style="padding:60px;text-align:center;color:var(--text3);font-size:13px">Yükleniyor...</div>';
   document.getElementById('page-title').textContent=PTITLES[p]||p;
@@ -2339,7 +2429,7 @@ async function getPortalLink(custId, forceNew) {
     } else {
       toast('✓ Yeni portal linki oluşturuldu ve kopyalandı','green');
     }
-  } catch(e) { toast('Bağlantı hatası','red'); }
+  } catch(e) { handleError(e); }
 }
 
 async function copyPortalLink(custId) {
@@ -2370,7 +2460,7 @@ async function saveVisaResult(id) {
     // hangi sayfadaysak onu yeniden çiz, sabit renderConsulate() ile yanlış sayfaya atlamayalım.
     const curPage = localStorage.getItem('vizecrm_lastpage');
     ({consulate:renderConsulate, completed:renderCompleted})[curPage]?.();
-  } catch(e) { toast('Bağlantı hatası','red'); }
+  } catch(e) { handleError(e); }
 }
 
 // Konsolosluk sayfası filtre durumu
@@ -2733,7 +2823,7 @@ async function renderPerformance(){
     const d=await res.json();
     if(d.error){document.getElementById('main-content').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Rapor okunamadı.<br><span style="font-size:11px;color:var(--text3)">user_sessions / audit_log tabloları oluşturulmamış olabilir.</span></div>';return;}
     rapor=d.report||[];
-  }catch(e){document.getElementById('main-content').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Bağlantı hatası.</div>';return;}
+  }catch(e){document.getElementById('main-content').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">🔌 Sunucuya ulaşılamıyor. Sayfayı yenileyip tekrar deneyin.</div>';handleError(e);return;}
 
   rapor.sort((a,b)=>b.actionCount-a.actionCount);
   function saatFmt(dk){
@@ -2857,7 +2947,7 @@ async function renderMuhasebe() {
     else allCustExpenses = d2.expenses || [];
   } catch(e) {
     expenses = []; allCustExpenses = [];
-    hatalar.push('Bağlantı hatası');
+    hatalar.push('🔌 Sunucuya ulaşılamıyor');
   }
   if(hatalar.length) toast('⚠️ '+hatalar.join(' · '),'red');
   renderMuhasebePage();
@@ -2941,7 +3031,7 @@ async function savePaymentDate(payId, tutar){
     await loadCustomers();
     await loadAllPayments();
     renderMuhasebe();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 // dateFrom/dateTo AÇIKÇA verilir — bu fonksiyon hem Dashboard hem Muhasebe tarafından
@@ -3516,7 +3606,7 @@ async function saveExpenseEdit(id){
     document.querySelector('div[style*=fixed]')?.remove();
     toast('✓ Gider güncellendi','green');
     await renderMuhasebe();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function editCustExpense(id){
@@ -3565,7 +3655,7 @@ async function saveCustExpenseEdit(id){
     document.querySelector('div[style*=fixed]')?.remove();
     toast('✓ Müşteri gideri güncellendi','green');
     await renderMuhasebe();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function showMuhMonthDetail(monthKey) {
@@ -3869,7 +3959,7 @@ async function addCustExpense(custId) {
     if(!d.success){toast('Hata: '+(d.error?.message||'Eklenemedi'),'red');return;}
     toast('-'+fmtTL(amt)+' gider eklendi ('+cat+')','green');
     await openPanel(custId,panelReadOnly);
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function deleteCustExpense(custId, expId) {
@@ -3880,7 +3970,7 @@ async function deleteCustExpense(custId, expId) {
     if(!d.success){toast('Silinemedi','red');return;}
     toast('Gider silindi','red');
     await openPanel(custId,panelReadOnly);
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function openAddExpenseModal() {
@@ -3980,7 +4070,7 @@ async function saveEditPayment(payId, btn) {
     await loadCustomers();
     await loadAllPayments();
     renderMuhasebePage();
-  } catch(e) { toast('Bağlantı hatası','red'); btn.disabled=false; btn.textContent='✓ Güncelle'; }
+  } catch(e) { handleError(e,'Güncelleme'); btn.disabled=false; btn.textContent='✓ Güncelle'; }
 }
 
 async function deleteExpense(id) {
@@ -4132,7 +4222,7 @@ async function sendIgReply(convId){
     if(inp)inp.value='';
     await renderInstagramMessages();
     openIgConversation(convId);
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function rejectIgConversation(convId){
@@ -4143,7 +4233,7 @@ async function rejectIgConversation(convId){
     if(!d.success){toast('Hata','red');return;}
     toast('✕ Konuşma reddedildi','amber');
     await renderInstagramMessages();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function openConvertIgModal(convId){
@@ -4182,7 +4272,7 @@ async function confirmConvertIg(convId, btn){
     document.querySelector('div[style*=fixed]')?.remove();
     toast('✓ '+name+' lead\'e dönüştürüldü — '+d.id+' ('+d.assignedTo+'\'a atandı)','green');
     await renderInstagramMessages();
-  }catch(e){toast('Bağlantı hatası','red');btn.disabled=false;btn.textContent='✓ Onayla ve Ata';}
+  }catch(e){handleError(e,'Dönüştürme');btn.disabled=false;btn.textContent='✓ Onayla ve Ata';}
 }
 
 const ROLE_OPTS=[['management','👑 Yönetici'],['sales','💼 Satış'],['evrak','📄 Evrak'],['randevu','📅 Randevu']];
@@ -4203,7 +4293,7 @@ async function changeRole(un,newRole){
     toast('✓ Departman güncellendi','green');
     renderUsers();
   }catch(e){
-    toast('Bağlantı hatası','red');
+    handleError(new Error('fetch'));
   }
 }
 async function showAuditLog(){
@@ -4218,7 +4308,7 @@ async function showAuditLog(){
     const d=await res.json();
     if(d.error){m.querySelector('div>div').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Denetim kaydı okunamadı.<br><span style="font-size:11px;color:var(--text3)">audit_log tablosu henüz oluşturulmamış olabilir.</span></div>';return;}
     logs=d.logs||[];
-  }catch(e){m.querySelector('div>div').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Bağlantı hatası.</div>';return;}
+  }catch(e){m.querySelector('div>div').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">🔌 Sunucuya ulaşılamıyor. Tekrar deneyin.</div>';handleError(e);return;}
 
   const TIP_ETIKET={odeme_degisikligi:'💰 Ödeme Değişikliği',fatura_durumu:'📄 Fatura Durumu',odeme_kaydi_duzenleme:'💵 Ödeme Kaydı Düzenleme',musteri_gideri_duzenleme:'💸 Müşteri Gideri',genel_gider_duzenleme:'🧾 Genel Gider',sifre_sifirlama:'🔑 Şifre Sıfırlama',musteri_silme:'🗑️ Müşteri Silme'};
   const TIP_RENK={odeme_degisikligi:'#2563EB',fatura_durumu:'#7C3AED',odeme_kaydi_duzenleme:'#059669',musteri_gideri_duzenleme:'#DC2626',genel_gider_duzenleme:'#D97706',sifre_sifirlama:'#DB2777',musteri_silme:'#DC2626'};
@@ -4298,7 +4388,7 @@ async function impersonateUser(un){
     document.getElementById('sb-role').textContent=(ROLE_LABELS[CU.role]||CU.role);
     showPage(CU.role==='management'?'dashboard':(CU.role==='sales'?'today':'customers'));
     toast('👁 '+CU.name+' olarak görüntülüyorsunuz','blue');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function stopImpersonation(){
@@ -4347,7 +4437,7 @@ async function showUserActivity(userId, userName){
     const d=await res.json();
     if(d.error){m.querySelector('div>div').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">İşlem geçmişi okunamadı.</div>';return;}
     actions=d.actions||[]; sessions=d.sessions||[];
-  }catch(e){m.querySelector('div>div').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Bağlantı hatası.</div>';return;}
+  }catch(e){m.querySelector('div>div').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">🔌 Sunucuya ulaşılamıyor. Tekrar deneyin.</div>';handleError(e);return;}
 
   const TIP_ETIKET={odeme_degisikligi:'💰 Ödeme Değişikliği',fatura_durumu:'📄 Fatura Durumu',odeme_kaydi_duzenleme:'💵 Ödeme Kaydı',musteri_gideri_duzenleme:'💸 Müşteri Gideri',genel_gider_duzenleme:'🧾 Genel Gider',sifre_sifirlama:'🔑 Şifre Sıfırlama',musteri_silme:'🗑️ Müşteri Silme',asama_degisikligi:'🔄 Aşama Değişikliği',not_ekleme:'📝 Not Ekleme',arama_kaydi:'📞 Arama Kaydı',kullanici_goruntuleme:'👁 Kullanıcı Görüntüleme'};
   const TIP_RENK={odeme_degisikligi:'#2563EB',fatura_durumu:'#7C3AED',odeme_kaydi_duzenleme:'#059669',musteri_gideri_duzenleme:'#DC2626',genel_gider_duzenleme:'#D97706',sifre_sifirlama:'#DB2777',musteri_silme:'#DC2626',asama_degisikligi:'#0891B2',not_ekleme:'#65A30D',arama_kaydi:'#4F46E5',kullanici_goruntuleme:'#7C3AED'};
@@ -4449,7 +4539,7 @@ async function migratePasswords(){
     }
     alert('✅ Tamamlandı!\n\n'+toplam+' kullanıcının şifresi artık güvenli şekilde saklanıyor.\n\nHerkes aynı şifresiyle girmeye devam edebilir — hiçbir şey değişmedi, sadece güvenli hâle geldi.');
     renderUsers();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function sendPortalBulkEmails(){
@@ -4467,7 +4557,7 @@ async function sendPortalBulkEmails(){
     const sendData = await sendRes.json();
     if(!sendData.success){toast('Hata: '+(sendData.error?.message||sendData.error||'Gönderilemedi'),'red');return;}
     toast('✓ '+sendData.sent+' mail gönderildi'+(sendData.failed>0?' ('+sendData.failed+' başarısız)':''),'green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function renderUsers(){
@@ -4563,7 +4653,7 @@ async function saveUserInfo(){
     closeEditUserModal();
     renderUsers();
   }catch(e){
-    toast('Bağlantı hatası','red');
+    handleError(new Error('fetch'));
   }
 }
 async function editPw(un){
@@ -4587,7 +4677,7 @@ async function resetPw(un){
     if(!d.success){toast('Hata: '+(d.error?.message||d.error||'Sıfırlanamadı'),'red');return;}
     showTempPasswordModal(un,d.password);
     renderUsers();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function showTempPasswordModal(un,pw){
@@ -4617,7 +4707,7 @@ async function unlockUser(un){
     if(!d.success){toast('Hata: '+(d.error?.message||d.error||'Kilit açılamadı'),'red');return;}
     toast('✓ '+un+' kullanıcısının kilidi açıldı','green');
     renderUsers();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function deleteUser(un){
   if(!confirm(un+' kullanıcısını silmek istediğine emin misin? Bu işlem geri alınamaz!'))return;
@@ -4728,7 +4818,7 @@ async function openPanel(id, readonly=false){
         refundReason:raw.refund_reason,refundDate:raw.refund_date,
         refundRequestedBy:raw.refund_requested_by,refundRequestedAt:raw.refund_requested_at,
         evrakRep:raw.evrak_rep_name||'',randevuRep:raw.randevu_rep_name||'',source:raw.source||'manual'};
-    }catch(e){document.getElementById('panel-body').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">Bağlantı hatası.</div>';return;}
+    }catch(e){document.getElementById('panel-body').innerHTML='<div style="padding:40px;text-align:center;color:var(--red)">🔌 Sunucuya ulaşılamıyor. Tekrar deneyin.</div>';handleError(e);return;}
   }
   
   if(!c)return;
@@ -5245,7 +5335,7 @@ async function uploadFile(customerId, input){
       input.value='';
     };
     reader.readAsDataURL(file);
-  }catch(e){toast('Bağlantı hatası','red');if(btn){btn.disabled=false;btn.textContent='📎 Dosya Seç ve Yükle';}}
+  }catch(e){handleError(e,'Dosya yükleme');if(btn){btn.disabled=false;btn.textContent='📎 Dosya Seç ve Yükle';}}
 }
 
 async function deleteFile(customerId, fileName){
@@ -5256,7 +5346,7 @@ async function deleteFile(customerId, fileName){
     if(!d.success){toast('Silinemedi','red');return;}
     toast('🗑 Dosya silindi','amber');
     loadFiles(customerId);
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function deleteDocument(customerId, docName){
@@ -5267,7 +5357,7 @@ async function deleteDocument(customerId, docName){
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Silinemedi'),'red');return;}
     await openPanel(customerId);
     toast('🗑 Belge silindi','amber');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function addCompanion(id){
   const name=(document.getElementById('cp-name-'+id)?.value||'').trim();
@@ -5278,7 +5368,7 @@ async function addCompanion(id){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Eklenemedi'),'red');return;}
     invalidateCache();await openPanel(id);toast('✓ Refakatçi eklendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function removeCompanion(id,companionId){
   if(!confirm('Bu refakatçiyi silmek istediğine emin misin?'))return;
@@ -5287,7 +5377,7 @@ async function removeCompanion(id,companionId){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Silinemedi'),'red');return;}
     await openPanel(id);toast('🗑 Refakatçi silindi','amber');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function transferCustomer(id){
   const sel=document.getElementById('transfer-rep-'+id);
@@ -5301,7 +5391,7 @@ async function transferCustomer(id){
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast('✓ Temsilciye aktarıldı','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function requestRefund(id){
   const amt=parseInt(document.getElementById('rf-amt-'+id)?.value)||0;
@@ -5313,7 +5403,7 @@ async function requestRefund(id){
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     await loadCustomers();await openPanel(id);
     toast('⏳ İade talebi oluşturuldu','amber');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function completeRefund(id){
   try{
@@ -5324,7 +5414,7 @@ async function completeRefund(id){
     if(document.getElementById('detail-panel')?.classList.contains('open'))await openPanel(id);
     if(document.getElementById('page-title')?.textContent==='İadeler')renderRefunds();
     toast('✓ İade gerçekleşti olarak işaretlendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function cancelRefundRequest(id){
   if(!confirm('Bu iade talebini iptal etmek istediğine emin misin?'))return;
@@ -5334,7 +5424,7 @@ async function cancelRefundRequest(id){
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     await loadCustomers();await openPanel(id);
     toast('✕ İade talebi iptal edildi','amber');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function updateDocStatus(id,docName,status){
   try{
@@ -5342,7 +5432,7 @@ async function updateDocStatus(id,docName,status){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     toast('✓ '+docName+': '+status,'green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function updateCustomerInfo(id){
@@ -5361,7 +5451,7 @@ async function updateCustomerInfo(id){
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Müşteri bilgileri güncellendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function openAddPaymentModal(custId) {
@@ -5397,7 +5487,7 @@ async function savePanelPayment(custId, btn) {
     btn.closest('div[style*="fixed"]').remove();
     toast('✓ Taksit eklendi — Yeni toplam: '+fmtTL(d.newTotal),'green');
     await openPanel(custId,panelReadOnly);
-  }catch(e){toast('Bağlantı hatası','red');btn.disabled=false;btn.textContent='Kaydet';}
+  }catch(e){handleError(e,'Gider kaydetme');btn.disabled=false;btn.textContent='Kaydet';}
 }
 
 async function deletePanelPayment(custId, payId) {
@@ -5408,7 +5498,7 @@ async function deletePanelPayment(custId, payId) {
     if(!d.success){toast('Silinemedi','red');return;}
     toast('🗑 Taksit silindi','red');
     await openPanel(custId,panelReadOnly);
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function toggleInvoice(custId,yeniDurum){
@@ -5419,7 +5509,7 @@ async function toggleInvoice(custId,yeniDurum){
     toast(yeniDurum?'✓ Fatura kesildi olarak işaretlendi':'Fatura kesilmedi olarak işaretlendi','green');
     await loadCustomers();await openPanel(custId,panelReadOnly);
     if(document.getElementById('cust-tbody'))renderRows();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function updatePayment(id){
@@ -5439,7 +5529,7 @@ async function updatePayment(id){
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Ödeme bilgileri güncellendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function addNewDocument(id){
@@ -5450,7 +5540,7 @@ async function addNewDocument(id){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Eklenemedi'),'red');return;}
     await openPanel(id);toast('✓ Belge eklendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function exportExcel(){
@@ -5498,7 +5588,7 @@ async function openAddUserForm(){
     const d=await res.json();
     if(!d.success){toast('Hata: '+(d.error||'Eklenemedi'),'red');return;}
     toast('✓ Kullanıcı eklendi ('+role+')','green');renderUsers();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function deleteCustomer(id){
@@ -5512,7 +5602,7 @@ async function deleteCustomer(id){
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast('🗑 '+name+' silindi','red');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 async function markApplicationDone(custId, appId) {
@@ -5523,7 +5613,7 @@ async function markApplicationDone(custId, appId) {
     if(!d.success){toast('Hata: '+(d.error?.message||'Güncellenemedi'),'red');return;}
     toast('✓ Başvuru yapıldı olarak işaretlendi','green');
     invalidateCache();await loadCustomers(true);renderRows();await openPanel(custId,panelReadOnly);
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 
 function checkPendingApplications(custId, newStatus, applications) {
@@ -5548,7 +5638,7 @@ async function addApplication(id){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Eklenemedi'),'red');return;}
     await openPanel(id);toast('✓ Başvuru eklendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function updateApplication(customerId,appId){
   const name=document.getElementById('ap-apn-'+appId)?.value.trim()||'';
@@ -5562,7 +5652,7 @@ async function updateApplication(customerId,appId){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Güncellenemedi'),'red');return;}
     await openPanel(customerId);toast('✓ Başvuru güncellendi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function deleteApplication(customerId,appId){
   if(!confirm('Bu başvuruyu silmek istediğine emin misin?'))return;
@@ -5571,7 +5661,7 @@ async function deleteApplication(customerId,appId){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Silinemedi'),'red');return;}
     await openPanel(customerId);toast('🗑 Başvuru silindi','amber');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function saveVisa(id){
   const start=document.getElementById('vs-start-'+id)?.value||'';
@@ -5583,7 +5673,7 @@ async function saveVisa(id){
     await loadCustomers();await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Vize bilgileri kaydedildi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function saveDesiredAppt(id){
   const v=document.getElementById('ap-desired-'+id)?.value.trim()||'';
@@ -5593,7 +5683,7 @@ async function saveDesiredAppt(id){
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     await loadCustomers();await openPanel(id);
     toast(v?'📌 İstenilen tarih kaydedildi':'Temizlendi','blue');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function saveAppt(id){
   const v=document.getElementById('ap-'+id)?.value||'';
@@ -5607,7 +5697,7 @@ async function saveAppt(id){
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast(v?'📅 Randevu kaydedildi':'Randevu temizlendi','blue');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function moveStatus(id,ns){
   if(!checkPendingApplications(id,ns,panelApps||[]))return;
@@ -5619,7 +5709,7 @@ async function moveStatus(id,ns){
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast('✓ Aşama: '+ns,'green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function collectKalan(id, totalFee){
   const inp=document.getElementById('ed-kalan-'+id);
@@ -5641,7 +5731,7 @@ async function collectKalan(id, totalFee){
     const dateLabel=paymentDate?fmtDate(paymentDate):'bugün';
     toast('✓ '+fmtTL(amount)+' tahsil edildi — '+dateLabel+' tarihi ile kaydedildi','green');
     if(document.getElementById('kanban'))renderPipeline();
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 async function addCall(id){
   const r=document.getElementById('cl-r-'+id)?.value,nt=(document.getElementById('cl-n-'+id)?.value||'').trim();
@@ -5653,7 +5743,7 @@ async function addCall(id){
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('📞 Arama kaydedildi — '+RLABELS[r],'blue');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 function filterNotes(custId){
   var q=(document.getElementById('note-search-'+custId)?.value||'').toLowerCase();
@@ -5670,7 +5760,7 @@ async function saveNote(id){
     inp.value='';invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Not kaydedildi','green');
-  }catch(e){toast('Bağlantı hatası','red');}
+  }catch(e){handleError(e);}
 }
 function closePanel(){document.getElementById('overlay').classList.remove('open');document.getElementById('detail-panel').classList.remove('open');}
 async function openModal(){
@@ -5715,7 +5805,7 @@ async function addCustomer(){
     if(btn)btn.textContent='Tekrar deneniyor...';
     await new Promise(r=>setTimeout(r,1500));
     try{res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:payload});}
-    catch(e2){toast('Bağlantı hatası — internet bağlantınızı kontrol edin','red');if(btn){btn.disabled=false;btn.textContent='✓ Müşteriyi Kaydet';}addingCustomer=false;return;}
+    catch(e2){handleError(e2,'Müşteri ekleme');if(btn){btn.disabled=false;btn.textContent='✓ Müşteriyi Kaydet';}addingCustomer=false;return;}
   }
   try{
     const d=await res.json();
