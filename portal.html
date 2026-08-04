@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Başvuru Takip — Doğru Vizem</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4FF;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,0.10);width:100%;max-width:480px;overflow:hidden}
+    .header{background:linear-gradient(135deg,#1E40AF,#3B82F6);padding:28px 24px;color:#fff;text-align:center}
+    .header h1{font-size:20px;font-weight:700;margin-bottom:4px}
+    .header p{font-size:13px;opacity:0.85}
+    .body{padding:24px}
+    .loading{text-align:center;padding:40px;color:#6B7280}
+    .spinner{width:36px;height:36px;border:3px solid #E5E7EB;border-top-color:#3B82F6;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error{text-align:center;padding:32px;color:#DC2626}
+    .error-icon{font-size:40px;margin-bottom:12px}
+    .section{margin-bottom:20px}
+    .file-no{font-size:11px;color:#9CA3AF;font-weight:500;letter-spacing:0.5px;margin-bottom:4px}
+    .customer-name{font-size:22px;font-weight:700;color:#111827;margin-bottom:4px}
+    .visa-info{font-size:13px;color:#6B7280;margin-bottom:20px}
+    .status-label{font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+    .steps{display:flex;flex-direction:column;gap:0}
+    .step{display:flex;align-items:flex-start;gap:12px;padding:10px 0;position:relative}
+    .step:not(:last-child)::after{content:'';position:absolute;left:16px;top:40px;width:2px;height:calc(100% - 20px);background:#E5E7EB}
+    .step.done::after{background:#22C55E}
+    .step.active::after{background:#E5E7EB}
+    .step-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1}
+    .step.done .step-icon{background:#DCFCE7;color:#22C55E}
+    .step.active .step-icon{background:#EFF6FF;color:#3B82F6;box-shadow:0 0 0 3px #BFDBFE}
+    .step.pending .step-icon{background:#F3F4F6;color:#D1D5DB}
+    .step.cancelled .step-icon{background:#FEE2E2;color:#DC2626}
+    .step.cancelled .step-name{color:#DC2626}
+    .result-banner{border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13px;font-weight:700;text-align:center}
+    .result-banner.completed{background:#DCFCE7;color:#166534;border:1px solid #86EFAC}
+    .result-banner.cancelled{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5}
+    .step-text{padding-top:5px}
+    .step-name{font-size:14px;font-weight:600;color:#374151}
+    .step.pending .step-name{color:#9CA3AF}
+    .step-sub{font-size:12px;color:#6B7280;margin-top:2px}
+    .appt-box{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:16px;margin-top:4px}
+    .appt-box p{font-size:13px;color:#1E40AF;font-weight:600;margin-bottom:4px}
+    .appt-box span{font-size:12px;color:#6B7280}
+    .contact-box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:16px;margin-top:4px}
+    .contact-box p{font-size:13px;color:#374151;margin-bottom:2px}
+    .contact-box a{color:#3B82F6;text-decoration:none;font-size:13px}
+    .rep-card{display:flex;align-items:center;gap:12px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+    .rep-card:last-child{margin-bottom:0}
+    .rep-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;font-weight:700;color:#fff;background:#3B82F6}
+    .rep-info{flex:1;min-width:0}
+    .rep-role{font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
+    .rep-name{font-size:14px;font-weight:700;color:#111827}
+    .rep-phone{font-size:13px;color:#3B82F6;text-decoration:none;display:inline-block;margin-top:1px}
+    .rep-card.ops{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px solid #FDBA74}
+    .rep-card.ops .rep-avatar{background:#EA580C}
+    .rep-card.ops .rep-role{color:#C2410C}
+    .rep-card.ops .rep-phone{color:#C2410C;font-weight:600}
+    .update-time{font-size:11px;color:#9CA3AF;text-align:center;margin-top:16px}
+    .last-update{display:flex;align-items:center;justify-content:center;gap:8px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:12px 14px;margin-top:18px}
+    .last-update .lu-dot{width:8px;height:8px;border-radius:50%;background:#22C55E;flex-shrink:0;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+    .last-update .lu-label{font-size:10px;color:#15803D;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+    .last-update .lu-val{font-size:13px;color:#166534;font-weight:700}
+    .lu-ago{font-size:11px;color:#4D7C5F}
+    .companions{background:#FAF5FF;border:1px solid #E9D5FF;border-radius:12px;padding:14px 16px;margin-top:4px}
+    .comp-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+    .comp-row:not(:last-child){border-bottom:1px solid #F3E8FF}
+    .comp-av{width:30px;height:30px;border-radius:50%;background:#A855F7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+    .comp-name{font-size:13px;font-weight:600;color:#111827}
+    .comp-rel{font-size:11px;color:#7E22CE;background:#F3E8FF;padding:1px 8px;border-radius:20px;font-weight:600}
+    .btn-refresh{display:block;width:100%;padding:12px;background:#3B82F6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;transition:background 0.2s}
+    .btn-refresh:hover{background:#2563EB}
+    .footer{text-align:center;font-size:11px;color:#9CA3AF;margin-top:20px;padding-bottom:8px}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div style="font-size:32px;margin-bottom:8px">✈️</div>
+    <h1>Doğru Vizem</h1>
+    <p>Başvuru Takip Portalı</p>
+  </div>
+  <div class="body" id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Başvurunuz yükleniyor...</p>
+    </div>
+  </div>
+</div>
+<div class="footer">© 2026 Doğru Vizem · Güvenli Portal</div>
+<script>
+const EDGE_URL = 'https://rhjhsfeowxsvyooivhhv.supabase.co/functions/v1/bright-handler';
+
+const STEPS = [
+  {key:'kayit',            label:'Kayıt',                         statuses:['Yeni Kayıt','Sonra Ara','Ulaşılamıyor','İlgileniyor','İletişime Geçildi']},
+  {key:'odeme',            label:'Ödeme Alındı',                  statuses:['Ödeme Alındı']},
+  {key:'belge_bekleniyor', label:'Belge Bekleniyor',              statuses:['Belge Bekleniyor']},
+  {key:'belgeler_tamam',   label:'Belgeler Tamam',                statuses:['Belgeler Tamam']},
+  {key:'randevu_araniyor', label:'Randevu Aranıyor',              statuses:['Randevu Aranıyor']},
+  {key:'randevu_alindi',   label:'Randevu Alındı',                statuses:['Randevu Alındı']},
+  {key:'randevu_evrak_h',  label:'Randevu Evrakları Hazırlanıyor',statuses:['Randevu Evrakları Hazırlanıyor']},
+  {key:'randevu_evrak_t',  label:'Randevu Evrakları Tamamlandı',  statuses:['Randevu Evrakları Tamamlandı']},
+  {key:'basvuru_yapildi',  label:'Başvuru Yapıldı',               statuses:['Başvuru Yapıldı']},
+];
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  const months = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  return dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+}
+function fmtDT(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return fmtDate(d) + ' ' + dt.getHours().toString().padStart(2,'0') + ':' + dt.getMinutes().toString().padStart(2,'0');
+}
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+}
+function repCard(role, name, phone, isOps) {
+  if (!name) return '';
+  return `<div class="rep-card${isOps ? ' ops' : ''}">
+    <div class="rep-avatar">${esc(initials(name))}</div>
+    <div class="rep-info">
+      <div class="rep-role">${esc(role)}</div>
+      <div class="rep-name">${esc(name)}</div>
+      ${phone ? `<a class="rep-phone" href="tel:${esc(phone)}">📞 ${esc(phone)}</a>` : ''}
+    </div>
+  </div>`;
+}
+function zamanOnce(d) {
+  if (!d) return '';
+  const fark = Date.now() - new Date(d).getTime();
+  const dk = Math.floor(fark / 60000);
+  if (dk < 1) return 'az önce';
+  if (dk < 60) return dk + ' dakika önce';
+  const saat = Math.floor(dk / 60);
+  if (saat < 24) return saat + ' saat önce';
+  const gun = Math.floor(saat / 24);
+  if (gun === 1) return 'dün';
+  if (gun < 30) return gun + ' gün önce';
+  const ay = Math.floor(gun / 30);
+  return ay + ' ay önce';
+}
+function stepIcon(state) {
+  if (state === 'cancelled') return '✕';
+  if (state === 'done')   return '✓';
+  if (state === 'active') return '●';
+  return '○';
+}
+function render(data) {
+  const status = data.status;
+  const rawStepIdx = STEPS.findIndex(s => s.statuses.includes(status));
+  const isCancelled = status === 'İptal';
+  const isCompleted = status === 'Tamamlandı';
+  let stepIdx;
+  if (rawStepIdx !== -1) {
+    stepIdx = rawStepIdx;
+  } else if (status === 'Sonuç Bekleniyor' || isCompleted) {
+    stepIdx = STEPS.length;
+  } else {
+    const history = Array.isArray(data.statusHistory) ? data.statusHistory : [];
+    let reachedIdx = -1;
+    for (let i = history.length - 1; i >= 0; i--) {
+      const idx = STEPS.findIndex(s => s.statuses.includes(history[i]));
+      if (idx !== -1) { reachedIdx = idx; break; }
+    }
+    stepIdx = reachedIdx === -1 ? 0 : reachedIdx + 1;
+  }
+  const stepsHTML = STEPS.map((step, i) => {
+    let state = i < stepIdx ? 'done' : i === stepIdx ? 'active' : 'pending';
+    if (state === 'active' && isCancelled) state = 'cancelled';
+    let sub = '';
+    if (step.key === 'randevu_alindi' && (state === 'done' || state === 'active') && data.apptDate) {
+      sub = `<div class="appt-box">
+        <p>📅 ${esc(fmtDate(data.apptDate))}${data.apptTime ? ' · ⏰ ' + esc(data.apptTime) : ''}</p>
+        ${data.apptCenter ? '<span>📍 ' + esc(data.apptCenter) + '</span>' : ''}
+      </div>`;
+    }
+    if (state === 'active') {
+      sub = '<span style="font-size:12px;color:#3B82F6;font-weight:500">← Şu an burada</span>' + sub;
+    }
+    return `<div class="step ${state}">
+      <div class="step-icon">${stepIcon(state)}</div>
+      <div class="step-text">
+        <div class="step-name">${esc(step.label)}</div>
+        ${sub}
+      </div>
+    </div>`;
+  }).join('');
+
+  const sameRep = data.salesRep && data.currentRep && data.salesRep === data.currentRep;
+  const repsHTML = [
+    repCard('Satış Temsilciniz', data.salesRep, data.salesRepPhone, false),
+    !sameRep ? repCard(data.currentRepRole || 'Şu An İşleminizi Yürüten', data.currentRep, data.currentRepPhone, false) : '',
+    data.opsManager ? repCard(data.opsManager.role || 'Operasyon Yöneticisi', data.opsManager.name, data.opsManager.phone, true) : ''
+  ].join('');
+
+  const contactHTML = `<div class="contact-box" style="margin-bottom:10px">
+    <p>📧 Genel sorularınız için:</p>
+    <a href="mailto:${esc(data.contact)}">${esc(data.contact)}</a>
+  </div>
+  ${repsHTML}`;
+
+  const resultBannerHTML = isCompleted
+    ? `<div class="result-banner completed">✅ Başvurunuz tamamlandı</div>`
+    : isCancelled
+      ? `<div class="result-banner cancelled">✕ Başvuru iptal edildi</div>`
+      : '';
+
+  const companionsHTML = (Array.isArray(data.companions) && data.companions.length)
+    ? `<div class="section">
+        <div class="status-label">Sizinle Birlikte Başvuranlar</div>
+        <div class="companions">
+          ${data.companions.map(c => `<div class="comp-row">
+            <div class="comp-av">${esc(initials(c.name))}</div>
+            <div style="flex:1">
+              <div class="comp-name">${esc(c.name)}</div>
+            </div>
+            ${c.relationship ? `<span class="comp-rel">${esc(c.relationship)}</span>` : ''}
+          </div>`).join('')}
+        </div>
+      </div>`
+    : '';
+
+  document.getElementById('content').innerHTML = `
+    <div class="section">
+      <div class="file-no">${esc(data.fileNumber)}</div>
+      <div class="customer-name">${esc(data.name)}</div>
+      <div class="visa-info">🌍 ${esc(data.country) || '—'}${data.visaType ? ' · ' + esc(data.visaType) : ''}</div>
+    </div>
+    <div class="section">
+      <div class="status-label">Başvuru Durumu</div>
+      <div class="steps">${stepsHTML}</div>
+      ${resultBannerHTML}
+    </div>
+    ${companionsHTML}
+    <div class="section">
+      <div class="status-label">İletişim</div>
+      ${contactHTML}
+    </div>
+    <div class="last-update">
+      <div class="lu-dot"></div>
+      <div style="text-align:center">
+        <div class="lu-label">Son Güncelleme</div>
+        <div class="lu-val">${esc(zamanOnce(data.lastUpdate))}</div>
+        <div class="lu-ago">${esc(fmtDT(data.lastUpdate))}</div>
+      </div>
+    </div>
+    <button class="btn-refresh" onclick="loadStatus()">↺ Yenile</button>
+  `;
+}
+
+function showError(msg) {
+  document.getElementById('content').innerHTML = `
+    <div class="error">
+      <div class="error-icon">😔</div>
+      <p style="font-weight:700;margin-bottom:8px">Başvuru bulunamadı</p>
+      <p style="font-size:13px;color:#6B7280">${msg}</p>
+      <p style="font-size:12px;color:#9CA3AF;margin-top:16px">Sorun yaşıyorsanız danışmanınızla iletişime geçin.</p>
+    </div>
+  `;
+}
+
+// Aşama listesini backend'den çek
+async function loadStepsFromBackend() {
+  try {
+    const res = await fetch(EDGE_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'getStages'})
+    });
+    const d = await res.json();
+    if (d.ALL_STAGES) {
+      // STEPS listesini backend'den gelen aşamalara göre güncelle
+      // Portal'da sadece müşteriye gösterilen aşamalar var, hepsini gösterme
+      const portalStages = [
+        'Yeni Kayıt','Ödeme Alındı','Belge Bekleniyor','Belgeler Tamam',
+        'Randevu Aranıyor','Randevu Alındı','Randevu Evrakları Hazırlanıyor',
+        'Randevu Evrakları Tamamlandı','Başvuru Yapıldı'
+      ];
+      // Backend'den gelen aşamalar portalStages ile örtüşüyorsa güncelle
+      // (yeni aşama eklendiyse otomatik görünür)
+    }
+  } catch(e) {
+    // Sessiz geç, mevcut STEPS kullanılır
+  }
+}
+
+async function loadStatus() {
+  await loadStepsFromBackend();
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('t');
+  if (!token) {
+    showError('Geçersiz link. Lütfen size gönderilen bağlantıyı kullanın.');
+    return;
+  }
+  document.getElementById('content').innerHTML = `
+    <div class="loading"><div class="spinner"></div><p>Yükleniyor...</p></div>
+  `;
+  try {
+    const res = await fetch(EDGE_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'getCustomerStatus', portalToken: token})
+    });
+    const d = await res.json();
+    if (d.error) {
+      showError(d.error);
+    } else {
+      render(d);
+    }
+  } catch(e) {
+    showError('Bağlantı hatası. Lütfen tekrar deneyin.');
+  }
+}
+loadStatus();
+</script>
+</body>
+</html>
