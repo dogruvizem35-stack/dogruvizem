@@ -598,7 +598,7 @@ function fmtDT(iso){
 
 // CACHE SİSTEMİ — sayfa geçişlerini hızlandırır
 let _custCacheTime = 0;
-var CACHE_TTL = 30000; // 30 saniye
+var CACHE_TTL = 120000; // 2 dakika
 function invalidateCache() { _custCacheTime = 0; }
 
 async function loadCustomers(force=false){
@@ -833,12 +833,18 @@ function _showDashModal(title, list, cols) {
   });
 }
 
-async function loadAllPayments(){
+let _paymentsCacheTime = 0;
+const PAYMENTS_CACHE_TTL = 60000; // 60 saniye
+
+async function loadAllPayments(force=false){
   if(CU.role!=='management') return;
+  // Cache kontrolü
+  if(!force && allPayments.length > 0 && (Date.now() - _paymentsCacheTime) < PAYMENTS_CACHE_TTL) return;
   try{
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getPaymentHistory',token:CU.token})});
     const d=await res.json();
     allPayments=d.payments||[];
+    _paymentsCacheTime = Date.now();
   }catch(e){ allPayments=[]; }
 }
 
@@ -1122,8 +1128,12 @@ async function initApp(){
   await loadStages();
   document.getElementById('sb-role').textContent={management:'Yönetici',sales:'Satış Temsilcisi',ops:'Operasyon Uzmanı',evrak:'Evrak Sorumlusu',randevu:'Randevu Sorumlusu'}[CU.role];
   const isM=CU.role==='management';
-  await loadCustomers();
-  if(isM) await loadAllPayments();
+  // İlk yüklemede paralel çek
+  if(isM){
+    await Promise.all([loadCustomers(), loadAllPayments()]);
+  } else {
+    await loadCustomers();
+  }
   renderNavMenu();
   document.getElementById('topbar-right').innerHTML=`
     <div class="tb-search" id="tb-search-wrap"><span>🔍</span><input placeholder="Müşteri ara..." oninput="gSearch(this.value)"></div>
@@ -1156,7 +1166,9 @@ async function showPage(p){
   document.querySelector('.sidebar')?.classList.remove('mobile-open');
   document.getElementById('mobile-overlay')?.classList.remove('open');
   const mySeq = ++navSeq;
-  document.getElementById('main-content').innerHTML='<div style="padding:60px;text-align:center;color:var(--text3);font-size:13px">Yükleniyor...</div>';
+  // Cache varsa Yükleniyor yazma, anlık render et
+  const hasCache = customers.length > 0 && (Date.now() - _custCacheTime) < CACHE_TTL;
+  if(!hasCache) document.getElementById('main-content').innerHTML='<div style="padding:60px;text-align:center;color:var(--text3);font-size:13px">Yükleniyor...</div>';
   document.getElementById('page-title').textContent=PTITLES[p]||p;
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelector('[onclick="showPage(\''+p+'\')"]')?.classList.add('active');
@@ -1168,9 +1180,15 @@ async function showPage(p){
   if(searchWrap){searchWrap.style.display=(p==='dashboard')?'none':'';const si=searchWrap.querySelector('input');if(si)si.value='';}
   // Sadece müşteri verisi gerektiren sayfalarda yenile, muhasebe/performans kendi yükler
   const needsCustomers=['dashboard','today','customers','pipeline','refunds','consulate','completed','cancelled','notinterested'];
-  if(needsCustomers.includes(p))await loadCustomers();
+  // Dashboard ve muhasebe'de iki isteği PARALEL gönder — sırayla bekleme
+  if(p==='dashboard'&&CU.role==='management'){
+    await Promise.all([loadCustomers(), loadAllPayments()]);
+  } else if(p==='muhasebe'&&CU.role==='management'){
+    await Promise.all([loadCustomers(), loadAllPayments()]);
+  } else if(needsCustomers.includes(p)){
+    await loadCustomers();
+  }
   if(mySeq!==navSeq) return; // kullanıcı başka sayfaya geçti — bu render'ı çöpe at
-  if((p==='dashboard'||p==='muhasebe')&&CU.role==='management') await loadAllPayments();
   if(mySeq!==navSeq) return;
   refreshNavBadges(); // veri tazelendi, kenar çubuğu sayaçları da güncellensin
   await ({dashboard:renderDash,today:renderToday,customers:renderCusts,pipeline:renderPipeline,sold:renderSold,consulate:renderConsulate,completed:renderCompleted,cancelled:renderCancelled,notinterested:renderNotInterested,muhasebe:renderMuhasebe,performance:renderPerformance,instagram:renderInstagramMessages,refunds:renderRefunds,users:renderUsers,account:renderAccount})[p]?.();
