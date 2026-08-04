@@ -501,6 +501,9 @@ let tableColSearch='';
 let custSearchQuery='';
 let custStatusFilter=[]; // çoklu seçim — boşsa tüm aşamalar
 let custCountryFilter='';
+// PAGINATION
+let custPage = 0;
+const PAGE_SIZE = 50;
 let panelReadOnly=false;
 let panelSalesView=false;
 let panelPayments=[];
@@ -613,7 +616,7 @@ async function setReminder(custId, date){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'setReminder',customerId:custId,reminderDate:date||null,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hatırlatıcı kaydedilemedi','red');return;}
-    await loadCustomers();
+    invalidateCache();await loadCustomers(true);
     renderRows();
     if(document.querySelector('[id^="panel-"]')) await openPanel(custId);
     toast(date?('&#x1F514; '+fmtDate(date)+' tarihinde aranacak'):'Hatırlatıcı kaldırıldı',date?'green':'amber');
@@ -809,7 +812,7 @@ function getTableData(){
 function sortTable(col){
   if(tableSort.col===col) tableSort.dir=tableSort.dir==='asc'?'desc':'asc';
   else{tableSort.col=col;tableSort.dir='desc';}
-  renderRows();
+  custPage=0;renderRows();
 }
 
 function getSortIcon(col){
@@ -830,6 +833,7 @@ function resetAllFilters(){
   custSearchQuery='';
   custStatusFilter=[];
   custCountryFilter='';
+  custPage=0;
   filtered=computeCustFiltered();
   const todayRem=customers.filter(c=>c.reminderDate===getTodayStr()&&(
     CU.role==='management'||
@@ -1916,9 +1920,9 @@ function computeCustFiltered(){
     return true;
   });
 }
-function applyCustFilters(){filtered=computeCustFiltered();renderRows();}
-function fC(q){custSearchQuery=q;applyCustFilters();}
-function fCo(s){custCountryFilter=s;applyCustFilters();}
+function applyCustFilters(){filtered=computeCustFiltered();custPage=0;renderRows();}
+function fC(q){custSearchQuery=q;custPage=0;applyCustFilters();}
+function fCo(s){custCountryFilter=s;custPage=0;applyCustFilters();}
 function toggleCustStatus(status,checked){
   if(checked){if(!custStatusFilter.includes(status))custStatusFilter.push(status);}
   else{custStatusFilter=custStatusFilter.filter(s=>s!==status);}
@@ -2056,9 +2060,13 @@ function renderRows(){
   const list=getTableData();
   const cc=document.getElementById('cust-count'),tb=document.getElementById('cust-tbody');
   if(!cc||!tb)return;
-  cc.textContent=list.length+' Müşteri';
-  if(!list.length){tb.innerHTML='<tr><td colspan="'+(CU.role==="management"?'11':'10')+'" style="text-align:center;padding:48px;color:var(--text3)">Müşteri bulunamadı</td></tr>';return;}
-  tb.innerHTML=list.map(c=>{
+  const totalPages=Math.ceil(list.length/PAGE_SIZE);
+  if(custPage>=totalPages&&totalPages>0)custPage=totalPages-1;
+  const start=custPage*PAGE_SIZE;
+  const pageList=list.slice(start,start+PAGE_SIZE);
+  cc.textContent=list.length+' Müşteri'+(list.length>PAGE_SIZE?' · Sayfa '+(custPage+1)+'/'+totalPages:'');
+  if(!list.length){tb.innerHTML='<tr><td colspan="'+(CU.role==="management"?'11':'10')+'" style="text-align:center;padding:48px;color:var(--text3)">Müşteri bulunamadı</td></tr>';renderPaginationBar(0,0);return;}
+  tb.innerHTML=pageList.map(c=>{
     const rem=c.fee-c.prepay;
     const stale=c.days>7;
     const hasRem=c.reminderDate===getTodayStr();
@@ -2092,6 +2100,32 @@ function renderRows(){
       :''
     }`;
   }).join('');
+  renderPaginationBar(list.length, totalPages);
+}
+
+function renderPaginationBar(total, totalPages){
+  // Eski bar varsa kaldır
+  const old = document.getElementById('pagination-bar');
+  if(old) old.remove();
+  if(total <= PAGE_SIZE) return;
+  const bar = document.createElement('div');
+  bar.id = 'pagination-bar';
+  bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap;gap:8px';
+  const start = custPage * PAGE_SIZE + 1;
+  const end = Math.min((custPage + 1) * PAGE_SIZE, total);
+  bar.innerHTML = `
+    <div style="font-size:12px;color:var(--text2)">${start}–${end} / <b>${total}</b> müşteri gösteriliyor</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-ghost btn-sm" onclick="custPage=0;renderRows()" ${custPage===0?'disabled':''}>«</button>
+      <button class="btn btn-ghost btn-sm" onclick="custPage--;renderRows()" ${custPage===0?'disabled':''}>‹ Önceki</button>
+      ${Array.from({length:totalPages},(_, i)=>`<button class="btn btn-sm ${i===custPage?'btn-primary':'btn-ghost'}" onclick="custPage=${i};renderRows()" style="min-width:32px">${i+1}</button>`).slice(Math.max(0,custPage-2),Math.min(totalPages,custPage+3)).join('')}
+      <button class="btn btn-ghost btn-sm" onclick="custPage++;renderRows()" ${custPage>=totalPages-1?'disabled':''}>Sonraki ›</button>
+      <button class="btn btn-ghost btn-sm" onclick="custPage=${`totalPages-1`};renderRows()" ${custPage>=totalPages-1?'disabled':''}>»</button>
+    </div>
+  `;
+  // tbl-wrap'in sonuna ekle
+  const tblWrap = document.querySelector('.tbl-wrap');
+  if(tblWrap) tblWrap.appendChild(bar);
 }
 
 // fC, fCo ve aşama filtreleri artık dosyanın üst kısmında computeCustFiltered/applyCustFilters ile birleşik çalışıyor
@@ -5198,7 +5232,7 @@ async function addCompanion(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addCompanion',customerId:id,companionName:name,companionRelationship:relationship,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Eklenemedi'),'red');return;}
-    await openPanel(id);toast('✓ Refakatçi eklendi','green');
+    invalidateCache();await openPanel(id);toast('✓ Refakatçi eklendi','green');
   }catch(e){toast('Bağlantı hatası','red');}
 }
 async function removeCompanion(id,companionId){
@@ -5218,7 +5252,7 @@ async function transferCustomer(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'transferCustomer',customerId:id,newRepUsername:newRep,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Aktarılamadı'),'red');return;}
-    await loadCustomers();await openPanel(id);
+    invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast('✓ Temsilciye aktarıldı','green');
@@ -5279,7 +5313,7 @@ async function updateCustomerInfo(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateCustomerInfo',customerId:id,name:nm,phone:ph,email:em,visa_type:vi,country:co,tc,registrationDate:regD||null,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
-    await loadCustomers();await openPanel(id);
+    invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Müşteri bilgileri güncellendi','green');
   }catch(e){toast('Bağlantı hatası','red');}
@@ -5443,7 +5477,7 @@ async function markApplicationDone(custId, appId) {
     const d=await res.json();
     if(!d.success){toast('Hata: '+(d.error?.message||'Güncellenemedi'),'red');return;}
     toast('✓ Başvuru yapıldı olarak işaretlendi','green');
-    await loadCustomers();renderRows();await openPanel(custId,panelReadOnly);
+    invalidateCache();await loadCustomers(true);renderRows();await openPanel(custId,panelReadOnly);
   }catch(e){toast('Bağlantı hatası','red');}
 }
 
@@ -5524,7 +5558,7 @@ async function saveAppt(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateAppt',customerId:id,apptDate:v,apptTime:t,apptCenter:center,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
-    await loadCustomers();await openPanel(id);
+    invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
     toast(v?'📅 Randevu kaydedildi':'Randevu temizlendi','blue');
@@ -5557,7 +5591,7 @@ async function collectKalan(id, totalFee){
       const msg=typeof d.error==='string'?d.error:(d.error&&d.error.message)||'Kaydedilemedi';
       if(msg.length>60)alert('⚠️ '+msg);else toast('Hata: '+msg,'red');return;
     }
-    await loadCustomers();await loadAllPayments();await openPanel(id);
+    invalidateCache();await loadCustomers(true);await loadAllPayments();await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     const dateLabel=paymentDate?fmtDate(paymentDate):'bugün';
     toast('✓ '+fmtTL(amount)+' tahsil edildi — '+dateLabel+' tarihi ile kaydedildi','green');
@@ -5571,7 +5605,7 @@ async function addCall(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addCall',customerId:id,callResult:r,callNote:nt,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
-    await loadCustomers();await openPanel(id);
+    invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('📞 Arama kaydedildi — '+RLABELS[r],'blue');
   }catch(e){toast('Bağlantı hatası','red');}
@@ -5588,7 +5622,7 @@ async function saveNote(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addNote',customerId:id,text,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
-    inp.value='';await loadCustomers();await openPanel(id);
+    inp.value='';invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Not kaydedildi','green');
   }catch(e){toast('Bağlantı hatası','red');}
@@ -5603,7 +5637,7 @@ async function openModal(){
     if(CU.role==='sales'||CU.role==='evrak'||CU.role==='randevu'){
       repSelect.innerHTML=`<option value="${CU.username}">${CU.name} (Ben)</option>`;
       repSelect.disabled=true;
-    }else{repSelect.disabled=false;repSelect.innerHTML=salesReps.map(u=>`<option value="${u.username}">${u.name}</option>`).join('');}
+    }else{repSelect.disabled=false;repSelect.innerHTML=salesReps.map(u=>`<option value="${esc(u.username)}">${esc(u.name)}</option>`).join('');}
   }catch(e){}
   document.getElementById('add-modal').classList.add('open');
 }
