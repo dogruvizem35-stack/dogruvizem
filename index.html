@@ -483,12 +483,12 @@ let CU=null;
 // ama arayüz görüntülenen kullanıcının deneyimini yansıtır.
 let realCU=null;
 
-const STAGES=['Yeni Kayıt','Sonra Ara','Ulaşılamıyor','İlgileniyor','İlgilenmiyor','İletişime Geçildi','Ödeme Alındı','Belge Bekleniyor','Belgeler Tamam','Randevu Aranıyor','Randevu Alındı','Randevu Evrakları Hazırlanıyor','Randevu Evrakları Tamamlandı','Başvuru Yapıldı','Sonuç Bekleniyor','Tamamlandı','İptal'];
+var STAGES=['Yeni Kayıt','Sonra Ara','Ulaşılamıyor','İlgileniyor','İlgilenmiyor','İletişime Geçildi','Ödeme Alındı','Belge Bekleniyor','Belgeler Tamam','Randevu Aranıyor','Randevu Alındı','Randevu Evrakları Hazırlanıyor','Randevu Evrakları Tamamlandı','Başvuru Yapıldı','Sonuç Bekleniyor','Tamamlandı','İptal'];
 // SENKRONİZASYON UYARISI: Bu dosyadaki durum (status) listeleri (SCLS, PRESALE_STAGES,
 // WARN_EVRAK_S, WARN_RANDEVU_S, CONSULATE_WAIT_S, KSTAGES, KCOLS) bright-handler-v14.ts (backend,
 // SALES_STAGES/EVRAK_STAGES/RANDEVU_STAGES) ve portal.html (STEPS) ile elle senkron tutuluyor.
 // Yeni bir durum eklerken/çıkarırken/adını değiştirirken HER ÜÇ dosyayı da güncelleyin.
-const SCLS={'Yeni Kayıt':'b-lead','Sonra Ara':'b-callback','Ulaşılamıyor':'b-unreachable','İlgileniyor':'b-interested','İlgilenmiyor':'b-notinterested','İletişime Geçildi':'b-contacted','Ödeme Alındı':'b-payment','Belge Bekleniyor':'b-docs-pending','Belgeler Tamam':'b-docs-done','Randevu Aranıyor':'b-appt-search','Randevu Alındı':'b-appt-sched','Randevu Evrakları Hazırlanıyor':'b-docs-pending','Randevu Evrakları Tamamlandı':'b-docs-done','Başvuru Yapıldı':'b-submitted','Sonuç Bekleniyor':'b-waiting','Tamamlandı':'b-completed','İptal':'b-cancelled'};
+var SCLS={'Yeni Kayıt':'b-lead','Sonra Ara':'b-callback','Ulaşılamıyor':'b-unreachable','İlgileniyor':'b-interested','İlgilenmiyor':'b-notinterested','İletişime Geçildi':'b-contacted','Ödeme Alındı':'b-payment','Belge Bekleniyor':'b-docs-pending','Belgeler Tamam':'b-docs-done','Randevu Aranıyor':'b-appt-search','Randevu Alındı':'b-appt-sched','Randevu Evrakları Hazırlanıyor':'b-docs-pending','Randevu Evrakları Tamamlandı':'b-docs-done','Başvuru Yapıldı':'b-submitted','Sonuç Bekleniyor':'b-waiting','Tamamlandı':'b-completed','İptal':'b-cancelled'};
 const MONTHS=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 function repColorHash(name){if(!name||name==='—')return'#2563EB';const cols=['#2563EB','#D97706','#059669','#DC2626','#0891B2','#7C3AED','#0D9488','#DB2777','#EA580C','#65A30D'];let h=0;for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return cols[Math.abs(h)%cols.length];}
 // Notlar ve aramalar artık customer_notes / customer_calls tablolarından geliyor
@@ -503,7 +503,7 @@ let custStatusFilter=[]; // çoklu seçim — boşsa tüm aşamalar
 let custCountryFilter='';
 // PAGINATION
 let custPage = 0;
-const PAGE_SIZE = 50;
+var PAGE_SIZE = 50;
 let panelReadOnly=false;
 let panelSalesView=false;
 let panelPayments=[];
@@ -528,7 +528,7 @@ function fmtDT(iso){
 
 // CACHE SİSTEMİ — sayfa geçişlerini hızlandırır
 let _custCacheTime = 0;
-const CACHE_TTL = 30000; // 30 saniye
+var CACHE_TTL = 30000; // 30 saniye
 function invalidateCache() { _custCacheTime = 0; }
 
 async function loadCustomers(force=false){
@@ -1012,6 +1012,8 @@ async function initApp(){
   const av=document.getElementById('sb-av');
   av.textContent=initials(CU.name);av.style.background=CU.color;av.style.color='#fff';
   document.getElementById('sb-name').textContent=CU.name;
+  // Realtime başlat
+  startRealtime();
   document.getElementById('sb-role').textContent={management:'Yönetici',sales:'Satış Temsilcisi',ops:'Operasyon Uzmanı',evrak:'Evrak Sorumlusu',randevu:'Randevu Sorumlusu'}[CU.role];
   const isM=CU.role==='management';
   await loadCustomers();
@@ -1036,6 +1038,135 @@ const PTITLES={dashboard:'Dashboard',today:'Bugün Ne Yapmalıyım',customers:'M
 // görür ("Muhasebe'ye bastım ama Dashboard geldi"). Her çağrıya sıra numarası veriyoruz;
 // numara eskimişse o render sessizce iptal edilir.
 let navSeq = 0;
+
+// ============================================================
+// REALTIME — Supabase WebSocket ile anlık güncelleme
+// customers tablosunda herhangi bir değişiklik olunca
+// tüm açık CRM ekranları otomatik yenilenir.
+// ============================================================
+let _realtimeChannel = null;
+let _realtimeToast = null;
+
+function startRealtime() {
+  // Önceki bağlantı varsa kapat
+  if (_realtimeChannel) {
+    _realtimeChannel.unsubscribe();
+    _realtimeChannel = null;
+  }
+
+  // Supabase Realtime için anon key gerekiyor
+  // Biz bunu EDGE_FUNCTION_URL'den proje ID'sini çıkarıp kullanıyoruz
+  const projectId = EDGE_FUNCTION_URL.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+  if (!projectId) return;
+
+  // Supabase Realtime WebSocket URL'i
+  const wsUrl = `wss://${projectId}.supabase.co/realtime/v1/websocket?apikey=&vsn=1.0.0`;
+
+  let ws = null;
+  let heartbeatInterval = null;
+  let reconnectTimeout = null;
+  let isConnected = false;
+
+  function connect() {
+    try {
+      ws = new WebSocket(`wss://${projectId}.supabase.co/realtime/v1/websocket?vsn=1.0.0`);
+
+      ws.onopen = () => {
+        isConnected = true;
+        // customers tablosuna abone ol
+        ws.send(JSON.stringify({
+          topic: "realtime:public:customers",
+          event: "phx_join",
+          payload: { config: { broadcast: { self: false }, presence: { key: "" }, postgres_changes: [{ event: "*", schema: "public", table: "customers" }] } },
+          ref: "1"
+        }));
+        // Heartbeat - 30 saniyede bir
+        heartbeatInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ topic: "phoenix", event: "heartbeat", payload: {}, ref: "hb" }));
+          }
+        }, 30000);
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          // Postgres değişikliği geldi
+          if (msg.event === "postgres_changes" || (msg.payload && msg.payload.data && msg.payload.data.type)) {
+            const changeType = msg.payload?.data?.type || msg.event;
+            handleRealtimeChange(changeType);
+          }
+        } catch (_) {}
+      };
+
+      ws.onclose = () => {
+        isConnected = false;
+        clearInterval(heartbeatInterval);
+        // 5 saniye sonra yeniden bağlan
+        reconnectTimeout = setTimeout(connect, 5000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+
+    } catch (e) {
+      // WebSocket desteklenmiyor veya bağlantı hatası — sessiz geç
+    }
+  }
+
+  connect();
+
+  // Cleanup için referans sakla
+  _realtimeChannel = { unsubscribe: () => {
+    clearInterval(heartbeatInterval);
+    clearTimeout(reconnectTimeout);
+    if (ws) ws.close();
+  }};
+}
+
+// Realtime değişiklik gelince çağrılır
+let _realtimePending = false;
+function handleRealtimeChange(changeType) {
+  if (_realtimePending) return; // zaten bekliyor
+  _realtimePending = true;
+
+  // 1 saniye bekle - aynı anda birden fazla değişiklik gelirse birleştir
+  setTimeout(async () => {
+    _realtimePending = false;
+    const currentPage = localStorage.getItem('vizecrm_lastpage') || '';
+    const needsUpdate = ['dashboard','today','customers','pipeline','refunds','consulate','completed','cancelled','notinterested'];
+
+    if (needsUpdate.includes(currentPage)) {
+      invalidateCache();
+      await loadCustomers(true);
+      // Aktif sayfayı yenile
+      const renders = {
+        dashboard: renderDash, today: renderToday, customers: renderCusts,
+        pipeline: renderPipeline, refunds: renderRefunds, consulate: renderConsulate,
+        completed: renderCompleted, cancelled: renderCancelled, notinterested: renderNotInterested
+      };
+      if (renders[currentPage]) {
+        renders[currentPage]();
+        // Küçük bir bildirim göster
+        showRealtimeToast();
+      }
+    }
+  }, 1000);
+}
+
+function showRealtimeToast() {
+  // Eski toast varsa kaldır
+  const old = document.getElementById('realtime-toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'realtime-toast';
+  t.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1E40AF;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;z-index:9000;opacity:0;transition:opacity 0.3s';
+  t.textContent = '🔄 Veri güncellendi';
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; });
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000);
+}
 
 async function showPage(p){
   const mySeq = ++navSeq;
