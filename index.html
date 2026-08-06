@@ -1304,7 +1304,58 @@ function getDashFiltered(){
 // Ödeme bazlı ciro hesaplaması: ödeme ne zaman ALINDIYSA o tarihe göre filtreler (kayıt tarihine göre değil)
 // Not: inPaymentPeriod ve getRevenueFiltered kaldırıldı — hiçbir yerden çağrılmıyorlardı.
 // Ciro her yerde getIncomeItems üzerinden hesaplanıyor.
+function showGiderModal(){
+  const giderList=expenses.filter(e=>inMuhPeriod(e.date,muhPeriod,muhDateFrom,muhDateTo));
+  const totalGider=giderList.reduce((s,e)=>s+(e.amount||0),0);
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  const rows=giderList.length===0
+    ?'<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Bu dönemde gider kaydı yok</td></tr>'
+    :giderList.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>`
+      <tr>
+        <td style="padding:10px 14px;color:var(--text2)">${fmtDate(e.date)}</td>
+        <td style="padding:10px 14px"><span class="badge b-ops">${esc(e.category||'—')}</span></td>
+        <td style="padding:10px 14px">${esc(e.description||'—')}</td>
+        <td style="padding:10px 14px;text-align:right;color:var(--red);font-weight:700">${fmtTL(e.amount||0)}</td>
+        <td style="padding:10px 14px;font-size:11px;color:var(--text3)">${esc(e.created_by||'—')}</td>
+      </tr>`).join('');
+  m.innerHTML=`<div style="background:var(--bg);border-radius:16px;width:100%;max-width:800px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:16px;font-weight:700">📤 Genel Gider Detayı</div>
+        <div style="font-size:13px;color:var(--red);font-weight:600;margin-top:2px">${giderList.length} kayıt · Toplam: ${fmtTL(totalGider)}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="this.closest('div[style*=fixed]').remove();openAddExpenseModal()">+ Gider Ekle</button>
+        <button style="background:none;border:none;font-size:20px;cursor:pointer" onclick="this.closest('div[style*=fixed]').remove()">✕</button>
+      </div>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="position:sticky;top:0;background:var(--surface2)">
+          <tr>
+            <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Tarih</th>
+            <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Kategori</th>
+            <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Açıklama</th>
+            <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Tutar</th>
+            <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Kaydeden</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
 function showPendingDetail() {
+  // allPayments yüklü değilse yükle
+  if(!allPayments || !allPayments.length) {
+    loadAllPayments(true).then(()=>showPendingDetail());
+    toast('Veriler yükleniyor...','blue');
+    return;
+  }
   var hov = "var(--surface2)";
   var list = customers.filter(c => (c.fee||0)-(c.prepay||0)>0 && c.status!=="İptal")
     .sort((a,b) => ((b.fee||0)-(b.prepay||0)) - ((a.fee||0)-(a.prepay||0)));
@@ -2715,21 +2766,32 @@ function renderCancelled(){
 // ===== İLGİLENMİYOR =====
 function renderNotInterested(){
   const list=customers.filter(c=>c.status==='İlgilenmiyor').sort((a,b)=>new Date(b.lastModRaw||0)-new Date(a.lastModRaw||0));
+  let niSelected = new Set();
   document.getElementById('main-content').innerHTML=`
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">İlgilenmiyor olarak işaretlenmiş müşteriler — ana Müşteriler listesinde görünmezler, sadece burada takip edilirler.</div>
+  <div id="ni-bulk-bar" style="display:none;background:var(--accent-l);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin-bottom:10px;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--accent)"><span id="ni-bulk-count">0</span> müşteri seçildi</span>
+    <button class="btn btn-primary btn-sm" onclick="niReactivate()">↩ Yeni Kayıt'a Al</button>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="niClearSelection()">✕ İptal</button>
+  </div>
   <div class="tbl-wrap">
     <div class="tbl-toolbar">
       <div class="tbl-label">${list.length} Müşteri İlgilenmiyor</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="niExportExcel()">📥 Excel</button>
+      </div>
     </div>
     <div style="overflow-x:auto">
-    <table class="tbl" style="min-width:700px">
+    <table class="tbl" style="min-width:740px">
       <thead><tr>
+        <th style="width:36px"><input type="checkbox" id="ni-check-all" onchange="niToggleAll(this.checked)"></th>
         <th>Dosya No</th><th>Ad Soyad</th><th>Telefon</th><th>Ülke</th><th>Temsilci</th><th>Son Güncelleme</th>
       </tr></thead>
       <tbody>
         ${list.map(c=>{
           return `<tr onclick="openPanel('${c.id}')" style="cursor:pointer">
-            <td>${c.id}</td>
+            <td onclick="event.stopPropagation()"><input type="checkbox" class="ni-cb" data-id="${c.id}" onchange="niToggle(this)"></td>
+            <td style="font-size:11px;color:var(--text3)">${c.id}</td>
             <td><b>${c.name}</b></td>
             <td><a class="phone-link" href="tel:${c.phone}" onclick="event.stopPropagation()">${c.phone}</a></td>
             <td>${c.country||'—'}</td>
@@ -2742,6 +2804,60 @@ function renderNotInterested(){
     </div>
     ${list.length===0?'<div style="padding:40px;text-align:center;color:var(--text3)">İlgilenmiyor olarak işaretli müşteri yok.</div>':''}
   </div>`;
+}
+
+function niToggle(cb){
+  const bar=document.getElementById('ni-bulk-bar');
+  const cnt=document.getElementById('ni-bulk-count');
+  const cbs=[...document.querySelectorAll('.ni-cb')];
+  const sel=cbs.filter(c=>c.checked);
+  bar.style.display=sel.length>0?'flex':'none';
+  if(cnt) cnt.textContent=sel.length;
+}
+
+function niToggleAll(checked){
+  document.querySelectorAll('.ni-cb').forEach(cb=>{cb.checked=checked;});
+  niToggle({checked});
+}
+
+function niClearSelection(){
+  document.querySelectorAll('.ni-cb').forEach(cb=>cb.checked=false);
+  const all=document.getElementById('ni-check-all');
+  if(all) all.checked=false;
+  const bar=document.getElementById('ni-bulk-bar');
+  if(bar) bar.style.display='none';
+}
+
+async function niReactivate(){
+  const ids=[...document.querySelectorAll('.ni-cb:checked')].map(cb=>cb.dataset.id);
+  if(!ids.length){toast('Müşteri seçin','red');return;}
+  if(!confirm(ids.length+' müşteriyi Yeni Kayıt statüsüne almak istediğine emin misin?'))return;
+  let ok=0;
+  for(const id of ids){
+    try{
+      const r=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'updateCustomerStatus',customerId:id,newStatus:'Yeni Kayıt',token:CU.token})});
+      const d=await r.json();
+      if(d.success)ok++;
+    }catch(e){}
+  }
+  invalidateCache();
+  await loadCustomers(true);
+  renderNotInterested();
+  toast('✓ '+ok+'/'+ids.length+' müşteri Yeni Kayıt statüsüne alındı','green');
+}
+
+function niExportExcel(){
+  const list=customers.filter(c=>c.status==='İlgilenmiyor').sort((a,b)=>new Date(b.lastModRaw||0)-new Date(a.lastModRaw||0));
+  if(!list.length){toast('Aktar data yok','red');return;}
+  const headers=['Dosya No','Ad Soyad','Telefon','Ülke','Temsilci','Son Güncelleme'];
+  const rows=list.map(c=>[c.id,c.name,c.phone,c.country||'—',c.rep||'—',c.lastMod||'—']);
+  const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols']=[{wch:14},{wch:24},{wch:14},{wch:16},{wch:16},{wch:18}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'İlgilenmiyor');
+  XLSX.writeFile(wb,'ilgilenmiyor-musteri.xlsx');
+  toast('✓ Excel indirildi','green');
 }
 
 // ===== MUHASEBE =====
@@ -3236,10 +3352,11 @@ function renderMuhasebePage() {
       <div class="stat-val" style="color:var(--green)">${fmtTL(totalGelir)}</div>
       <div class="stat-label">Tahsilat · ${uniqueCustCount} müşteri · ${items.length} kayıt</div>
     </div>
-    <div class="stat-card c-red" style="cursor:pointer" onclick="document.getElementById('muh-gider').scrollIntoView({behavior:'smooth'})">
+    <div class="stat-card c-red" style="cursor:pointer" onclick="showGiderModal()">
       <div class="stat-icon" style="background:var(--red-bg);color:var(--red)">📤</div>
       <div class="stat-val" style="color:var(--red)">${fmtTL(totalGider)}</div>
       <div class="stat-label">Genel Gider · ${giderList.length} kayıt</div>
+      <div class="stat-trend" style="color:var(--red);font-size:10px">Detay için tıkla →</div>
     </div>
     <div class="stat-card c-red" style="cursor:pointer" onclick="showCustExpDetail()">
       <div class="stat-icon" style="background:var(--red-bg);color:var(--red)">💸</div>
