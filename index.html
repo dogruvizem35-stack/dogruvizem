@@ -1304,6 +1304,168 @@ function getDashFiltered(){
 // Ödeme bazlı ciro hesaplaması: ödeme ne zaman ALINDIYSA o tarihe göre filtreler (kayıt tarihine göre değil)
 // Not: inPaymentPeriod ve getRevenueFiltered kaldırıldı — hiçbir yerden çağrılmıyorlardı.
 // Ciro her yerde getIncomeItems üzerinden hesaplanıyor.
+
+function showTahsilatModal(){
+  const {items,totalGelir,uniqueCustCount}=getMuhData(muhPeriod);
+  // Filtre değişkenleri
+  let fRep='', fCountry='', fSearch='';
+  const reps=[...new Set(items.map(p=>p.rep).filter(Boolean))].sort();
+  const countries=[...new Set(items.map(p=>p.country).filter(Boolean))].sort();
+
+  function getFiltered(){
+    return items.filter(p=>{
+      if(fRep && p.rep!==fRep) return false;
+      if(fCountry && p.country!==fCountry) return false;
+      if(fSearch){
+        const sq=fSearch.toLowerCase();
+        if(!(p.name.toLowerCase().includes(sq)||p.fileNo.toLowerCase().includes(sq)||(p.rep||'').toLowerCase().includes(sq))) return false;
+      }
+      return true;
+    }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  }
+
+  function renderRows(){
+    const list=getFiltered();
+    const total=list.reduce((s,p)=>s+p.amount,0);
+    document.getElementById('tah-count').textContent=list.length+' kayıt · '+fmtTL(total);
+    document.getElementById('tah-tbody').innerHTML=list.length===0
+      ?'<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Kayıt bulunamadı</td></tr>'
+      :list.map(p=>`<tr style="cursor:pointer" onclick="this.closest('div[style*=fixed]').remove();openPanel('${p.fileNo}')">
+          <td style="padding:9px 12px;color:var(--text2);white-space:nowrap">${p.date?fmtDate(p.date):'—'}</td>
+          <td style="padding:9px 12px;font-size:11px;color:var(--text3)">${p.fileNo}</td>
+          <td style="padding:9px 12px;font-weight:600">${esc(p.name)}</td>
+          <td style="padding:9px 12px;color:var(--text2)">${esc(p.country||'—')}</td>
+          <td style="padding:9px 12px;color:var(--text2)">${esc(p.rep||'—')}</td>
+          <td style="padding:9px 12px;text-align:right;color:var(--green);font-weight:700">${fmtTL(p.amount)}</td>
+          <td style="padding:9px 12px;font-size:11px;color:var(--text3)">${esc(p.note||'—')}</td>
+        </tr>`).join('');
+  }
+
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  m.innerHTML=`<div style="background:var(--bg);border-radius:16px;width:100%;max-width:960px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:16px;font-weight:700">💵 Tahsilat Detayı</div>
+        <div id="tah-count" style="font-size:13px;color:var(--green);font-weight:600;margin-top:2px">${items.length} kayıt · ${fmtTL(totalGelir)}</div>
+      </div>
+      <button style="background:none;border:none;font-size:20px;cursor:pointer" onclick="this.closest('div[style*=fixed]').remove()">✕</button>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+      <input id="tah-search" type="text" class="fi2" placeholder="🔍 Müşteri, dosya no, temsilci..." style="padding:6px 10px;font-size:12px;width:220px" oninput="document.getElementById('tah-rep').value='';document.getElementById('tah-country').value='';fSearch=this.value;fRep='';fCountry='';renderRows()">
+      <select id="tah-rep" class="sel" style="font-size:12px;padding:5px 8px" onchange="fRep=this.value;renderRows()">
+        <option value="">Tüm temsilciler</option>
+        ${reps.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('')}
+      </select>
+      <select id="tah-country" class="sel" style="font-size:12px;padding:5px 8px" onchange="fCountry=this.value;renderRows()">
+        <option value="">Tüm ülkeler</option>
+        ${countries.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('tah-search').value='';document.getElementById('tah-rep').value='';document.getElementById('tah-country').value='';fSearch='';fRep='';fCountry='';renderRows()">✕ Temizle</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="position:sticky;top:0;background:var(--surface2)">
+          <tr>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Tarih</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Dosya No</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Müşteri</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Ülke</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Temsilci</th>
+            <th style="padding:9px 12px;text-align:right;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Tutar</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Not</th>
+          </tr>
+        </thead>
+        <tbody id="tah-tbody"></tbody>
+      </table>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  renderRows();
+}
+
+function showBekleyenModal(){
+  const {bekleyenList,totalBekleyen}=getMuhData(muhPeriod);
+  let fRep='', fCountry='', fSearch='';
+  const reps=[...new Set(bekleyenList.map(c=>c.rep).filter(Boolean))].sort();
+  const countries=[...new Set(bekleyenList.map(c=>c.country).filter(Boolean))].sort();
+
+  function getFiltered(){
+    return bekleyenList.filter(c=>{
+      if(fRep && c.rep!==fRep) return false;
+      if(fCountry && c.country!==fCountry) return false;
+      if(fSearch){
+        const sq=fSearch.toLowerCase();
+        if(!(c.name.toLowerCase().includes(sq)||c.id.toLowerCase().includes(sq)||(c.phone||'').includes(sq))) return false;
+      }
+      return true;
+    }).sort((a,b)=>((b.fee||0)-(b.prepay||0))-((a.fee||0)-(a.prepay||0)));
+  }
+
+  function renderRows(){
+    const list=getFiltered();
+    const total=list.reduce((s,c)=>s+((c.fee||0)-(c.prepay||0)),0);
+    document.getElementById('bek-count').textContent=list.length+' müşteri · '+fmtTL(total);
+    document.getElementById('bek-tbody').innerHTML=list.length===0
+      ?'<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Kayıt bulunamadı</td></tr>'
+      :list.map(c=>{
+        const rem=(c.fee||0)-(c.prepay||0);
+        return `<tr style="cursor:pointer" onclick="this.closest('div[style*=fixed]').remove();openPanel('${c.id}')">
+          <td style="padding:9px 12px;font-weight:600">${esc(c.name)}</td>
+          <td style="padding:9px 12px;color:var(--text2)">${esc(c.country||'—')}</td>
+          <td style="padding:9px 12px;color:var(--text2)">${esc(c.rep||'—')}</td>
+          <td style="padding:9px 12px"><span class="badge ${SCLS[c.status]||'b-lead'}" style="font-size:10px">${c.status}</span></td>
+          <td style="padding:9px 12px;text-align:right;color:var(--text2)">${fmtTL(c.fee||0)}</td>
+          <td style="padding:9px 12px;text-align:right;color:var(--green)">${fmtTL(c.prepay||0)}</td>
+          <td style="padding:9px 12px;text-align:right;color:var(--amber);font-weight:700">${fmtTL(rem)}</td>
+        </tr>`;
+      }).join('');
+  }
+
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  m.addEventListener('click',function(e){if(e.target===m)m.remove();});
+  m.innerHTML=`<div style="background:var(--bg);border-radius:16px;width:100%;max-width:900px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:16px;font-weight:700">⏳ Bekleyen Tahsilat Detayı</div>
+        <div id="bek-count" style="font-size:13px;color:var(--amber);font-weight:600;margin-top:2px">${bekleyenList.length} müşteri · ${fmtTL(totalBekleyen)}</div>
+      </div>
+      <button style="background:none;border:none;font-size:20px;cursor:pointer" onclick="this.closest('div[style*=fixed]').remove()">✕</button>
+    </div>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+      <input id="bek-search" type="text" class="fi2" placeholder="🔍 Müşteri, telefon ara..." style="padding:6px 10px;font-size:12px;width:200px" oninput="fSearch=this.value;renderRows()">
+      <select class="sel" style="font-size:12px;padding:5px 8px" onchange="fRep=this.value;renderRows()">
+        <option value="">Tüm temsilciler</option>
+        ${reps.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('')}
+      </select>
+      <select class="sel" style="font-size:12px;padding:5px 8px" onchange="fCountry=this.value;renderRows()">
+        <option value="">Tüm ülkeler</option>
+        ${countries.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="fSearch='';fRep='';fCountry='';document.getElementById('bek-search').value='';renderRows()">✕ Temizle</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="position:sticky;top:0;background:var(--surface2)">
+          <tr>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Müşteri</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Ülke</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Temsilci</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Aşama</th>
+            <th style="padding:9px 12px;text-align:right;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Toplam Ücret</th>
+            <th style="padding:9px 12px;text-align:right;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)">Ödenen</th>
+            <th style="padding:9px 12px;text-align:right;font-weight:600;color:var(--amber);border-bottom:1px solid var(--border)">Kalan</th>
+          </tr>
+        </thead>
+        <tbody id="bek-tbody"></tbody>
+      </table>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  renderRows();
+}
 function showGiderModal(){
   const giderList=expenses.filter(e=>inMuhPeriod(e.date,muhPeriod,muhDateFrom,muhDateTo));
   const totalGider=giderList.reduce((s,e)=>s+(e.amount||0),0);
@@ -3347,10 +3509,11 @@ function renderMuhasebePage() {
 
   <!-- 6 OZET KART -->
   <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-    <div class="stat-card c-green" style="cursor:pointer" onclick="document.getElementById('muh-tahsilat').scrollIntoView({behavior:'smooth'})">
+    <div class="stat-card c-green" style="cursor:pointer" onclick="showTahsilatModal()">
       <div class="stat-icon" style="background:var(--green-bg);color:var(--green)">💵</div>
       <div class="stat-val" style="color:var(--green)">${fmtTL(totalGelir)}</div>
       <div class="stat-label">Tahsilat · ${uniqueCustCount} müşteri · ${items.length} kayıt</div>
+      <div class="stat-trend" style="color:var(--green);font-size:10px">Detay için tıkla →</div>
     </div>
     <div class="stat-card c-red" style="cursor:pointer" onclick="showGiderModal()">
       <div class="stat-icon" style="background:var(--red-bg);color:var(--red)">📤</div>
@@ -3369,10 +3532,11 @@ function renderMuhasebePage() {
       <div class="stat-val" style="color:${netKar>=0?'var(--green)':'var(--red)'};font-size:${Math.abs(netKar)>=100000?'18px':'22px'}">${fmtTL(Math.abs(netKar))}</div>
       <div class="stat-label">Net ${netKar>=0?'Kâr':'Zarar'} · %${totalGelir>0?Math.round(netKar/totalGelir*100):0} marj</div>
     </div>
-    <div class="stat-card c-amber">
+    <div class="stat-card c-amber" style="cursor:pointer" onclick="showBekleyenModal()">
       <div class="stat-icon" style="background:var(--amber-bg);color:var(--amber)">⏳</div>
       <div class="stat-val" style="color:var(--amber)">${fmtTL(totalBekleyen)}</div>
       <div class="stat-label">Bekleyen · ${bekleyenList.length} müşteri</div>
+      <div class="stat-trend" style="color:var(--amber);font-size:10px">Detay için tıkla →</div>
     </div>
     <div class="stat-card c-red">
       <div class="stat-icon" style="background:var(--red-bg);color:var(--red)">↩</div>
