@@ -691,7 +691,6 @@ function renderReminderBanner(list){
       +'<span style="color:var(--text2)">·</span>'
       +'<span style="color:var(--text2)">'+esc(c.rep||'—')+'</span>'
       +'<span class="badge '+(SCLS[c.status]||'b-lead')+'" style="font-size:10px">'+c.status+'</span>'
-      +'<button class="btn btn-primary btn-sm" style="padding:2px 8px;font-size:10px" onclick="openPanel(\''+c.id+'\')">'+(c.name.split(' ')[0]||'Aç')+'</button>'
       +'</div>';
   }).join('');
   return '<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:10px;padding:12px 16px;margin-bottom:12px;cursor:pointer" onclick="showReminderModal()">'
@@ -3079,6 +3078,8 @@ function renderToday(){
     return c.rep===CU.name||c.evrakRep===CU.name||c.randevuRep===CU.name;
   });
   const acil=[], bugun=[], yaklasan=[];
+  // Hatırlatıcılar - tüm kullanıcıların bugünkü hatırlatıcıları (yönetici hepsini görür)
+  const todayReminders = customers.filter(c=>c.reminderDate===getTodayStr());
   benim.forEach(c=>{
     const si=getStaleWait(c);
     if(c.apptDate){
@@ -3120,10 +3121,29 @@ function renderToday(){
       <div style="font-size:12px;color:var(--text3);text-transform:capitalize">${bugunStr}</div>
       <div style="font-size:15px;color:var(--text2);margin-top:2px">${toplam===0?'🎉 Harika! Bekleyen acil işin yok.':`Bugün ilgilenmen gereken <b style="color:var(--text)">${toplam}</b> dosya var.`}</div>
     </div>
+    ${todayReminders.length>0?`<div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:8px">🔔 Bugünkü Hatırlatıcılar (${todayReminders.length})</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${todayReminders.map(c=>`<div style="border:1px solid var(--amber);background:var(--amber-bg);border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between" onclick="openPanel('${c.id}')">
+          <div>
+            <div style="font-weight:600;font-size:13px">${esc(c.name)}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px;display:flex;gap:8px">
+              <span>📞 ${esc(c.phone||'—')}</span>
+              <span>👤 ${esc(c.rep||'—')}</span>
+              <span>🌍 ${esc(c.country||'—')}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge ${SCLS[c.status]||'b-lead'}" style="font-size:11px">${c.status}</span>
+            <span style="font-size:18px;color:var(--amber)">›</span>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
     ${grup('🔴 Acil',acil,'#DC2626','hemen aranmalı / işlem yapılmalı')}
     ${grup('⚠️ Bugün',bugun,'#D97706','bugün ilgilenilmeli')}
     ${grup('📞 Yaklaşan',yaklasan,'#2563EB','yakında takip gerekiyor')}
-    ${toplam===0?'<div style="text-align:center;padding:40px;color:var(--text3)">Tüm dosyaların güncel. 👏</div>':''}
+    ${toplam===0&&todayReminders.length===0?'<div style="text-align:center;padding:40px;color:var(--text3)">Tüm dosyaların güncel. 👏</div>':''}
   </div>`;
 }
 // Performans / KPI raporu — yönetici için. Oturum süreleri + işlem sayıları.
