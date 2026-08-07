@@ -5475,6 +5475,36 @@ async function openPanel(id, readonly=false){
     </div>
   </div>
 
+  <div class="ps" id="cl-${c.id}">
+    <div class="ps-head">
+      <div class="ps-title">📞 Arama Geçmişi</div>
+      <span style="font-size:11px;color:var(--text2)">${calls.length} arama · ${reached} ulaşıldı</span>
+    </div>
+    <div class="ps-body">
+      <div id="cl-list-${c.id}">${calls.length===0?'<div style="font-size:12px;color:var(--text3);padding:4px 0">Henüz arama kaydı yok.</div>':calls.map((cl,i)=>`
+        <div class="call-item">
+          <div class="call-num">${i+1}</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="badge ${RCLS[cl.result]||''}">${RLABELS[cl.result]||cl.result}</span>
+              <span style="font-size:10px;color:var(--text3)">${cl.date} · ${cl.caller}</span>
+            </div>
+            ${cl.note?'<div style="font-size:11px;color:var(--text2);margin-top:4px">📌 '+cl.note+'</div>':''}
+          </div>
+        </div>`).join('')}</div>
+      ${(!panelReadOnly||panelSalesView)?` <div style="margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;font-weight:600;color:var(--text2)">+ Yeni Arama Kaydı</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="sel" id="cl-r-${c.id}" style="flex:1;min-width:140px">
+            <option value="ulasildi">✅ Ulaşıldı</option><option value="cevapsiz">📵 Cevap Vermedi</option><option value="sonra_ara">🔄 Sonra Ara</option><option value="mesaj">💬 Mesaj Bırakıldı</option>
+          </select>
+          <input class="fi2" id="cl-n-${c.id}" placeholder="Kısa not..." style="flex:2;min-width:140px">
+        </div>
+        <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="addCall('${c.id}')">📞 Kaydet</button>
+      </div>`:''}  
+    </div>
+  </div>
+
   <div class="ps">
     <div class="ps-head"><div class="ps-title">İlerleme Takibi</div></div>
     <div class="ps-body"><div class="prog-track">${prog}</div></div>
@@ -5572,36 +5602,6 @@ async function openPanel(id, readonly=false){
   </div>
 
   ${renderReminderPanel(c, panelReadOnly)}
-
-  <div class="ps" id="cl-${c.id}">
-    <div class="ps-head">
-      <div class="ps-title">📞 Arama Geçmişi</div>
-      <span style="font-size:11px;color:var(--text2)">${calls.length} arama · ${reached} ulaşıldı</span>
-    </div>
-    <div class="ps-body">
-      <div id="cl-list-${c.id}">${calls.length===0?'<div style="font-size:12px;color:var(--text3);padding:4px 0">Henüz arama kaydı yok.</div>':calls.map((cl,i)=>`
-        <div class="call-item">
-          <div class="call-num">${i+1}</div>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span class="badge ${RCLS[cl.result]||''}">${RLABELS[cl.result]||cl.result}</span>
-              <span style="font-size:10px;color:var(--text3)">${cl.date} · ${cl.caller}</span>
-            </div>
-            ${cl.note?'<div style="font-size:11px;color:var(--text2);margin-top:4px">📌 '+cl.note+'</div>':''}
-          </div>
-        </div>`).join('')}</div>
-      ${(!panelReadOnly||panelSalesView)?` <div style="margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
-        <div style="font-size:11px;font-weight:600;color:var(--text2)">+ Yeni Arama Kaydı</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <select class="sel" id="cl-r-${c.id}" style="flex:1;min-width:140px">
-            <option value="ulasildi">✅ Ulaşıldı</option><option value="cevapsiz">📵 Cevap Vermedi</option><option value="sonra_ara">🔄 Sonra Ara</option><option value="mesaj">💬 Mesaj Bırakıldı</option>
-          </select>
-          <input class="fi2" id="cl-n-${c.id}" placeholder="Kısa not..." style="flex:2;min-width:140px">
-        </div>
-        <button class="btn btn-primary btn-sm" style="align-self:flex-start" onclick="addCall('${c.id}')">📞 Kaydet</button>
-      </div>`:''}  
-    </div>
-  </div>
 
   <div class="ps" id="ns-${c.id}">
     <div class="ps-head"><div class="ps-title">📝 Notlar <span style="font-weight:400;color:var(--text2)">(${notes.length})</span></div></div>
