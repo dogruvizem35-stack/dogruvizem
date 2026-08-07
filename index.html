@@ -50,25 +50,26 @@ async function signInUser(username, password) {
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F5F6FA;
+  --bg:#F4F5F9;
   --surface:#FFFFFF;
-  --surface2:#F9FAFB;
-  --border:#E5E7EB;
-  --border2:#D1D5DB;
-  --text:#111827;
-  --text2:#6B7280;
-  --text3:#9CA3AF;
-  --accent:#2563EB;
-  --accent-l:#EFF6FF;
-  --accent-t:#1D4ED8;
+  --surface2:#F8F9FC;
+  --border:#E4E7EF;
+  --border2:#CDD2E1;
+  --text:#0F1629;
+  --text2:#5A6480;
+  --text3:#9299B0;
+  /* Doğru Vizem — Lacivert & Kırmızı */
+  --accent:#1B3A8C;
+  --accent-l:#EEF2FB;
+  --accent-t:#142D6E;
   --green:#059669;
   --green-bg:#ECFDF5;
   --amber:#D97706;
   --amber-bg:#FFFBEB;
-  --red:#DC2626;
-  --red-bg:#FEF2F2;
-  --purple:#7C3AED;
-  --purple-bg:#F5F3FF;
+  --red:#E31E24;
+  --red-bg:#FEF0F0;
+  --purple:#1B3A8C;
+  --purple-bg:#EEF2FB;
   --sw:232px;
 }
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
@@ -108,7 +109,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 /* ===== LAYOUT ===== */
 #app{display:none}
 .layout{display:flex;min-height:100vh}
-.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sidebar{width:var(--sw);background:#0F1E4A;border-right:none;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-width:0}
 .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50;gap:12px}
 .content{padding:24px;flex:1}
@@ -117,22 +118,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .sb-logo-icon{width:30px;height:30px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0}
 .sb-logo-text{font-size:15px;font-weight:800;letter-spacing:-.3px}
-.sb-logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sb-logo-sub{font-size:10px;color:rgba(255,255,255,0.50);margin-top:1px}
 .sb-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto}
 .sb-sec{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;padding:10px 8px 4px}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;transition:all .12s;border:none;background:none;width:100%;text-align:left}
-.nav-item:hover{background:var(--bg);color:var(--text)}
-.nav-item.active{background:var(--accent-l);color:var(--accent);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,0.70);font-size:13px;font-weight:500;transition:all .12s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,0.10);color:#FFFFFF}
+.nav-item.active{background:rgba(255,255,255,0.15);color:#FFFFFF;font-weight:600}
 .nav-icon{width:16px;text-align:center;flex-shrink:0}
 .nav-badge{margin-left:auto;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px}
-.sb-user{padding:10px;border-top:1px solid var(--border)}
+.sb-user{padding:10px;border-top:1px solid rgba(255,255,255,0.12)}
 .sb-user-inner{display:flex;align-items:center;gap:9px;padding:10px;border-radius:8px;background:var(--bg)}
-.sb-uname{font-size:12px;font-weight:600}
-.sb-urole{font-size:10px;color:var(--text3)}
+.sb-uname{font-size:12px;font-weight:600;color:#FFFFFF}
+.sb-urole{font-size:10px;color:rgba(255,255,255,0.55)}
 .sb-links{display:flex;gap:8px;margin-top:3px}
-.sb-link{font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;font-weight:500}
+.sb-link{font-size:10px;color:rgba(255,255,255,0.60);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;font-weight:500}
 .sb-link:hover{text-decoration:underline}
-.sb-link-red{color:var(--red)}
+.sb-link-red{color:#FF8080}
 
 /* ===== TOPBAR ===== */
 .topbar-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
@@ -618,7 +619,7 @@ async function loadCustomers(force=false){
       days:r.last_modified_at?Math.max(0,Math.floor((Date.now()-new Date(r.last_modified_at).getTime())/86400000)):0,
       lastMod:fmtDT(r.last_modified_at),
       created:r.created_at||null,registrationDate:r.registration_date||'',lastModRaw:r.last_modified_at||null,
-      apptDate:r.appt_date||'',apptTime:r.appt_time||'',apptCenter:r.appt_center||'',
+      apptDate:r.appt_date||'',apptTime:r.appt_time||'',apptCenter:r.appt_center||'',reqCity:r.req_city||'',
       desiredApptDate:r.desired_appt_date||'',confirmedApptDate:r.confirmed_appt_date||'',
       visaStartDate:r.visa_start_date||'',visaEndDate:r.visa_end_date||'',visaRenewal:r.visa_renewal||false,
       tc:r.tc_kimlik||'',
@@ -2720,7 +2721,7 @@ function renderConsulateTable(){
       <td>${c.id}</td>
       <td><b>${c.name}</b></td>
       <td><a class="phone-link" href="tel:${c.phone}" onclick="event.stopPropagation()">${c.phone}</a></td>
-      <td>${c.country||'—'}</td>
+      <td>${c.country||'—'}</td><td style="font-size:11px;color:var(--text2)">${c.reqCity||'—'}</td>
       <td><span class="badge ${SCLS[c.status]||'b-lead'}">${c.status}</span></td>
       <td style="font-size:11px;line-height:1.7">
         <div><span style="color:#2563EB;font-weight:600">📞 Satış:</span> ${c.rep||'—'}</div>
@@ -5174,6 +5175,10 @@ async function openPanel(id, readonly=false){
           <option ${c.visa==='Öğrenci Vizesi'?'selected':''}>Öğrenci Vizesi</option>
           <option ${c.visa==='Aile Birleşimi'?'selected':''}>Aile Birleşimi</option>
         </select></div>
+        <div class="fi"><div class="fl">🏙 Talep Edilen Başvuru İli</div><select class="fi2" id="ed-city-${c.id}" style="padding:6px;width:100%" ${panelReadOnly?'disabled':''}>
+          <option value="">— İl Seçin —</option>
+          ${['Adana','Ankara','Antalya','Bursa','Edirne','Eskişehir','Gaziantep','İstanbul','İzmir','Kayseri','Konya','Marmaris','Muğla','Samsun','Trabzon'].map(s=>`<option value="${s}" ${(c.reqCity||'')=== s?'selected':''}>${s}</option>`).join('')}
+        </select></div>
         <div class="fi"><div class="fl">Satış Temsilcisi</div><div class="fv">${c.rep}</div></div>
         <div class="fi"><div class="fl">Aşamada Gün</div><div class="fv" style="color:${c.days>7?'var(--red)':'var(--text)'}">${c.days} gün</div></div>
         ${CU.role==='management'?('<div class="fi"><div class="fl">📅 Kayıt Tarihi</div><input type="date" class="fi2" id="ed-regdate-'+c.id+'" value="'+(c.registrationDate||c.created?.slice(0,10)||'')+'"></div>'):''}      </div>
@@ -5718,15 +5723,17 @@ async function updateDocStatus(id,docName,status){
 
 async function updateCustomerInfo(id){
   const nm=document.getElementById('ed-name-'+id)?.value.trim();
+  const rc=document.getElementById('ed-city-'+id)?.value||'';
   const ph=document.getElementById('ed-phone-'+id)?.value.trim();
   const em=document.getElementById('ed-email-'+id)?.value.trim();
   const vi=document.getElementById('ed-visa-'+id)?.value.trim();
   const co=document.getElementById('ed-country-'+id)?.value;
+  const rc=document.getElementById('ed-city-'+id)?.value||'';
   const tc=document.getElementById('ed-tc-'+id)?.value.trim()||'';
   if(!nm||!ph){toast('Ad ve Telefon zorunludur','red');return;}
   try{
     const regD=(document.getElementById('ed-regdate-'+id)?.value)||'';
-    const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateCustomerInfo',customerId:id,name:nm,phone:ph,email:em,visa_type:vi,country:co,tc,registrationDate:regD||null,token:CU.token})});
+    const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateCustomerInfo',customerId:id,name:nm,phone:ph,email:em,visa_type:vi,country:co,tc,registrationDate:regD||null,reqCity:rc||null,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     invalidateCache();await loadCustomers(true);await openPanel(id);
