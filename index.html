@@ -648,10 +648,13 @@ async function loadCustomers(force=false){
 
 function getTodayStr(){return new Date().toISOString().slice(0,10);}
 
-function todayFilterRep(rep){
-  // Müşteriler sayfasına git ve o temsilciye filtrele
-  tableRepFilter = rep;
-  showPage('customers');
+function todayRepToggle(rep){
+  const detail = document.getElementById('rep-detail-'+rep);
+  const arrow = document.getElementById('rep-arrow-'+rep);
+  if(!detail) return;
+  const isOpen = detail.style.display !== 'none';
+  detail.style.display = isOpen ? 'none' : 'block';
+  if(arrow) arrow.textContent = isOpen ? '›' : '⌄';
 }
 
 function showReminderModal(){
@@ -3136,30 +3139,44 @@ function renderToday(){
         c.status!=='Tamamlandı'&&c.status!=='İptal'&&c.status!=='İlgilenmiyor'&&
         (c.rep===rep||c.evrakRep===rep||c.randevuRep===rep)
       );
-      const remCount = repCusts.filter(c=>c.reminderDate===getTodayStr()).length;
-      const acilCount = repCusts.filter(c=>{
-        const w=getStaleWait(c); return w&&w.wait>=7;
-      }).length;
+      const remList = repCusts.filter(c=>c.reminderDate===getTodayStr());
+      const acilList = repCusts.filter(c=>{const w=getStaleWait(c);return w&&w.wait>=7;});
+      const remCount = remList.length;
+      const acilCount = acilList.length;
       const totalCount = repCusts.length;
-      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="todayFilterRep('${esc(rep)}')">
-        <div class="av" style="width:40px;height:40px;font-size:14px;background:${repColorHash(rep)};flex-shrink:0">${initials(rep)}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px">${esc(rep)}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${totalCount} aktif müşteri</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          ${remCount>0?`<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:4px 10px;text-align:center">
-            <div style="font-size:14px;font-weight:700;color:var(--amber)">${remCount}</div>
-            <div style="font-size:9px;color:var(--amber);font-weight:600">Hatırlatıcı</div>
-          </div>`:''}
-          ${acilCount>0?`<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:8px;padding:4px 10px;text-align:center">
-            <div style="font-size:14px;font-weight:700;color:var(--red)">${acilCount}</div>
-            <div style="font-size:9px;color:var(--red);font-weight:600">Acil</div>
-          </div>`:''}
-          <div style="background:var(--accent-l);border:1px solid var(--accent);border-radius:8px;padding:4px 10px;text-align:center">
-            <div style="font-size:14px;font-weight:700;color:var(--accent)">${totalCount}</div>
-            <div style="font-size:9px;color:var(--accent);font-weight:600">Toplam</div>
+      const hasIssue = remCount>0||acilCount>0;
+      return `<div style="background:var(--surface);border:1px solid ${hasIssue?'var(--amber)':'var(--border)'};border-radius:12px;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="todayRepToggle('${esc(rep)}')">
+          <div class="av" style="width:38px;height:38px;font-size:13px;background:${repColorHash(rep)};flex-shrink:0">${initials(rep)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${esc(rep)}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:1px">${totalCount} aktif müşteri</div>
           </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${remCount>0?`<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:3px 10px;text-align:center">
+              <div style="font-size:13px;font-weight:700;color:var(--amber)">${remCount}</div>
+              <div style="font-size:9px;color:var(--amber);font-weight:600">🔔 Hatırlatıcı</div>
+            </div>`:''}
+            ${acilCount>0?`<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:8px;padding:3px 10px;text-align:center">
+              <div style="font-size:13px;font-weight:700;color:var(--red)">${acilCount}</div>
+              <div style="font-size:9px;color:var(--red);font-weight:600">🔴 Geç Kalan</div>
+            </div>`:''}
+            ${!hasIssue?`<div style="font-size:11px;color:var(--green);font-weight:600">✅ Güncel</div>`:''}
+            <span style="color:var(--text3);font-size:14px" id="rep-arrow-${esc(rep)}">›</span>
+          </div>
+        </div>
+        <div id="rep-detail-${esc(rep)}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+          ${[...remList.map(c=>({c,tag:'🔔',col:'var(--amber)'})),...acilList.filter(c=>!remList.includes(c)).map(c=>({c,tag:'🔴',col:'var(--red)'}))].map(({c,tag,col})=>`
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="openPanel('${c.id}')">
+              <span style="font-size:13px">${tag}</span>
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:12px">${esc(c.name)}</div>
+                <div style="font-size:11px;color:var(--text2)">${esc(c.phone||'—')} · ${esc(c.country||'—')}</div>
+              </div>
+              <span class="badge ${SCLS[c.status]||'b-lead'}" style="font-size:10px">${c.status}</span>
+              <span style="color:var(--text3)">›</span>
+            </div>`).join('')}
+          ${remCount===0&&acilCount===0?`<div style="font-size:12px;color:var(--text3);padding:8px 0">Bugün için bekleyen iş yok ✅</div>`:''}
         </div>
       </div>`;
     }).join('');
