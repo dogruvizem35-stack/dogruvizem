@@ -5728,7 +5728,6 @@ async function updateCustomerInfo(id){
   const em=document.getElementById('ed-email-'+id)?.value.trim();
   const vi=document.getElementById('ed-visa-'+id)?.value.trim();
   const co=document.getElementById('ed-country-'+id)?.value;
-  const rc=document.getElementById('ed-city-'+id)?.value||'';
   const tc=document.getElementById('ed-tc-'+id)?.value.trim()||'';
   if(!nm||!ph){toast('Ad ve Telefon zorunludur','red');return;}
   try{
