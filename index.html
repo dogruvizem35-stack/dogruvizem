@@ -470,7 +470,7 @@ if (localStorage.getItem('vizecrm_token')) {
     <div class="fg"><label class="fl2">E-posta</label><input class="fi2" placeholder="ornek@email.com" id="nm-email"></div>
     <div class="form-row">
       <div class="fg"><label class="fl2">Hedef Ülke *</label>
-        <select class="fi2" id="nm-country"><option value="">— Ülke Seçin —</option><option>🇩🇪 Almanya</option><option>🇬🇧 İngiltere</option><option>🇫🇷 Fransa</option><option>🇮🇹 İtalya</option><option>🇪🇸 İspanya</option><option>🇳🇱 Hollanda</option><option>🇧🇪 Belçika</option><option>🇦🇹 Avusturya</option><option>🇨🇭 İsviçre</option><option>🇵🇹 Portekiz</option><option>🇬🇷 Yunanistan</option><option>🇸🇪 İsveç</option><option>🇳🇴 Norveç</option><option>🇩🇰 Danimarka</option><option>🇵🇱 Polonya</option><option>🇨🇿 Çekya</option><option>🇭🇺 Macaristan</option><option>🇮🇪 İrlanda</option><option>🇫🇮 Finlandiya</option><option>🇷🇴 Romanya</option><option>🇧🇬 Bulgaristan</option><option>🇸🇰 Slovakya</option><option>🇨🇳 Çin</option><option>🇺🇸 Amerika</option></select></div>
+        <select class="fi2" id="nm-country"><option value="">— Ülke Seçin —</option><option>🇩🇪 Almanya</option><option>🇬🇧 İngiltere</option><option>🇫🇷 Fransa</option><option>🇮🇹 İtalya</option><option>🇪🇸 İspanya</option><option>🇳🇱 Hollanda</option><option>🇧🇪 Belçika</option><option>🇦🇹 Avusturya</option><option>🇨🇭 İsviçre</option><option>🇵🇹 Portekiz</option><option>🇬🇷 Yunanistan</option><option>🇸🇪 İsveç</option><option>🇳🇴 Norveç</option><option>🇩🇰 Danimarka</option><option>🇵🇱 Polonya</option><option>🇨🇿 Çekya</option><option>🇭🇺 Macaristan</option><option>🇮🇪 İrlanda</option><option>🇫🇮 Finlandiya</option><option>🇷🇴 Romanya</option><option>🇧🇬 Bulgaristan</option><option>🇸🇰 Slovakya</option><option>🇱🇹 Litvanya</option><option>🇱🇻 Letonya</option><option>🇪🇪 Estonya</option><option>🇨🇳 Çin</option><option>🇺🇸 Amerika</option></select></div>
       <div class="fg"><label class="fl2">Vize Türü</label>
         <select class="fi2" id="nm-visa"><option>Schengen Turistik</option><option>Çalışma Vizesi</option><option>Öğrenci Vizesi</option><option>Aile Birleşimi</option></select></div>
     </div>
@@ -2399,7 +2399,7 @@ function renderCusts(){
       </div>
     </div>
     <select class="sel" onchange="fCo(this.value)">
-      <option value="">Tüm ülkeler</option><option ${custCountryFilter==='🇩🇪 Almanya'?'selected':''}>🇩🇪 Almanya</option><option ${custCountryFilter==='🇬🇧 İngiltere'?'selected':''}>🇬🇧 İngiltere</option><option ${custCountryFilter==='🇫🇷 Fransa'?'selected':''}>🇫🇷 Fransa</option><option ${custCountryFilter==='🇮🇹 İtalya'?'selected':''}>🇮🇹 İtalya</option><option ${custCountryFilter==='🇪🇸 İspanya'?'selected':''}>🇪🇸 İspanya</option><option ${custCountryFilter==='🇳🇱 Hollanda'?'selected':''}>🇳🇱 Hollanda</option><option ${custCountryFilter==='🇧🇪 Belçika'?'selected':''}>🇧🇪 Belçika</option><option ${custCountryFilter==='🇦🇹 Avusturya'?'selected':''}>🇦🇹 Avusturya</option><option ${custCountryFilter==='🇨🇭 İsviçre'?'selected':''}>🇨🇭 İsviçre</option><option ${custCountryFilter==='🇵🇹 Portekiz'?'selected':''}>🇵🇹 Portekiz</option><option ${custCountryFilter==='🇬🇷 Yunanistan'?'selected':''}>🇬🇷 Yunanistan</option><option ${custCountryFilter==='🇸🇪 İsveç'?'selected':''}>🇸🇪 İsveç</option><option ${custCountryFilter==='🇳🇴 Norveç'?'selected':''}>🇳🇴 Norveç</option><option ${custCountryFilter==='🇩🇰 Danimarka'?'selected':''}>🇩🇰 Danimarka</option><option ${custCountryFilter==='🇵🇱 Polonya'?'selected':''}>🇵🇱 Polonya</option><option ${custCountryFilter==='🇨🇿 Çekya'?'selected':''}>🇨🇿 Çekya</option><option ${custCountryFilter==='🇭🇺 Macaristan'?'selected':''}>🇭🇺 Macaristan</option><option ${custCountryFilter==='🇮🇪 İrlanda'?'selected':''}>🇮🇪 İrlanda</option><option ${custCountryFilter==='🇫🇮 Finlandiya'?'selected':''}>🇫🇮 Finlandiya</option><option ${custCountryFilter==='🇷🇴 Romanya'?'selected':''}>🇷🇴 Romanya</option><option ${custCountryFilter==='🇧🇬 Bulgaristan'?'selected':''}>🇧🇬 Bulgaristan</option><option ${custCountryFilter==='🇸🇰 Slovakya'?'selected':''}>🇸🇰 Slovakya</option><option ${custCountryFilter==='🇨🇳 Çin'?'selected':''}>🇨🇳 Çin</option><option ${custCountryFilter==='🇺🇸 Amerika'?'selected':''}>🇺🇸 Amerika</option>
+      <option value="">Tüm ülkeler</option><option ${custCountryFilter==='🇩🇪 Almanya'?'selected':''}>🇩🇪 Almanya</option><option ${custCountryFilter==='🇬🇧 İngiltere'?'selected':''}>🇬🇧 İngiltere</option><option ${custCountryFilter==='🇫🇷 Fransa'?'selected':''}>🇫🇷 Fransa</option><option ${custCountryFilter==='🇮🇹 İtalya'?'selected':''}>🇮🇹 İtalya</option><option ${custCountryFilter==='🇪🇸 İspanya'?'selected':''}>🇪🇸 İspanya</option><option ${custCountryFilter==='🇳🇱 Hollanda'?'selected':''}>🇳🇱 Hollanda</option><option ${custCountryFilter==='🇧🇪 Belçika'?'selected':''}>🇧🇪 Belçika</option><option ${custCountryFilter==='🇦🇹 Avusturya'?'selected':''}>🇦🇹 Avusturya</option><option ${custCountryFilter==='🇨🇭 İsviçre'?'selected':''}>🇨🇭 İsviçre</option><option ${custCountryFilter==='🇵🇹 Portekiz'?'selected':''}>🇵🇹 Portekiz</option><option ${custCountryFilter==='🇬🇷 Yunanistan'?'selected':''}>🇬🇷 Yunanistan</option><option ${custCountryFilter==='🇸🇪 İsveç'?'selected':''}>🇸🇪 İsveç</option><option ${custCountryFilter==='🇳🇴 Norveç'?'selected':''}>🇳🇴 Norveç</option><option ${custCountryFilter==='🇩🇰 Danimarka'?'selected':''}>🇩🇰 Danimarka</option><option ${custCountryFilter==='🇵🇱 Polonya'?'selected':''}>🇵🇱 Polonya</option><option ${custCountryFilter==='🇨🇿 Çekya'?'selected':''}>🇨🇿 Çekya</option><option ${custCountryFilter==='🇭🇺 Macaristan'?'selected':''}>🇭🇺 Macaristan</option><option ${custCountryFilter==='🇮🇪 İrlanda'?'selected':''}>🇮🇪 İrlanda</option><option ${custCountryFilter==='🇫🇮 Finlandiya'?'selected':''}>🇫🇮 Finlandiya</option><option ${custCountryFilter==='🇷🇴 Romanya'?'selected':''}>🇷🇴 Romanya</option><option ${custCountryFilter==='🇧🇬 Bulgaristan'?'selected':''}>🇧🇬 Bulgaristan</option><option ${custCountryFilter==='🇸🇰 Slovakya'?'selected':''}>🇸🇰 Slovakya</option><option ${custCountryFilter==='🇱🇹 Litvanya'?'selected':''}>🇱🇹 Litvanya</option><option ${custCountryFilter==='🇱🇻 Letonya'?'selected':''}>🇱🇻 Letonya</option><option ${custCountryFilter==='🇪🇪 Estonya'?'selected':''}>🇪🇪 Estonya</option><option ${custCountryFilter==='🇨🇳 Çin'?'selected':''}>🇨🇳 Çin</option><option ${custCountryFilter==='🇺🇸 Amerika'?'selected':''}>🇺🇸 Amerika</option>
     </select>
     ${hasColFilter?`<button class="btn btn-ghost btn-sm" onclick="resetTableFilters()">✕ Kolon filtrelerini temizle</button>`:''}
   </div>
@@ -5302,7 +5302,7 @@ async function openPanel(id, readonly=false){
         <div class="fi"><div class="fl">E-posta</div><input class="fi2" id="ed-email-${c.id}" value="${c.email||''}" style="padding:6px;width:100%" ${panelReadOnly?'disabled':''}></div>
         <div class="fi"><div class="fl">TC</div><input class="fi2" id="ed-tc-${c.id}" value="${c.tc||''}" placeholder="TC Kimlik No" style="padding:6px;width:100%" maxlength="11" ${panelReadOnly?'disabled':''}></div>
         <div class="fi"><div class="fl">Ülke</div><select class="fi2" id="ed-country-${c.id}" style="padding:6px;width:100%" ${panelReadOnly?'disabled':''}><option value="">— Ülke Seçin —</option>
-          ${['🇩🇪 Almanya','🇬🇧 İngiltere','🇫🇷 Fransa','🇮🇹 İtalya','🇪🇸 İspanya','🇳🇱 Hollanda','🇧🇪 Belçika','🇦🇹 Avusturya','🇨🇭 İsviçre','🇵🇹 Portekiz','🇬🇷 Yunanistan','🇸🇪 İsveç','🇳🇴 Norveç','🇩🇰 Danimarka','🇵🇱 Polonya','🇨🇿 Çekya','🇭🇺 Macaristan','🇮🇪 İrlanda','🇫🇮 Finlandiya','🇷🇴 Romanya','🇧🇬 Bulgaristan','🇸🇰 Slovakya','🇨🇳 Çin','🇺🇸 Amerika'].map(o=>`<option ${c.country===o?'selected':''}>${o}</option>`).join('')}
+          ${['🇩🇪 Almanya','🇬🇧 İngiltere','🇫🇷 Fransa','🇮🇹 İtalya','🇪🇸 İspanya','🇳🇱 Hollanda','🇧🇪 Belçika','🇦🇹 Avusturya','🇨🇭 İsviçre','🇵🇹 Portekiz','🇬🇷 Yunanistan','🇸🇪 İsveç','🇳🇴 Norveç','🇩🇰 Danimarka','🇵🇱 Polonya','🇨🇿 Çekya','🇭🇺 Macaristan','🇮🇪 İrlanda','🇫🇮 Finlandiya','🇷🇴 Romanya','🇧🇬 Bulgaristan','🇸🇰 Slovakya','🇱🇹 Litvanya','🇱🇻 Letonya','🇪🇪 Estonya','🇨🇳 Çin','🇺🇸 Amerika'].map(o=>`<option ${c.country===o?'selected':''}>${o}</option>`).join('')}
         </select></div>
         <div class="fi"><div class="fl">Vize Türü</div><select class="fi2" id="ed-visa-${c.id}" style="padding:6px;width:100%" ${panelReadOnly?'disabled':''}>
           <option ${c.visa==='Schengen Turistik'?'selected':''}>Schengen Turistik</option>
@@ -5393,7 +5393,7 @@ async function openPanel(id, readonly=false){
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <select class="fi2" id="new-ap-country-${c.id}" style="padding:5px;font-size:11px;grid-column:span 2">
             <option value="">Ülke seç *</option>
-            ${['🇩🇪 Almanya','🇬🇧 İngiltere','🇫🇷 Fransa','🇮🇹 İtalya','🇪🇸 İspanya','🇳🇱 Hollanda','🇧🇪 Belçika','🇦🇹 Avusturya','🇨🇭 İsviçre','🇵🇹 Portekiz','🇬🇷 Yunanistan','🇸🇪 İsveç','🇳🇴 Norveç','🇩🇰 Danimarka','🇵🇱 Polonya','🇨🇿 Çekya','🇭🇺 Macaristan','🇮🇪 İrlanda','🇫🇮 Finlandiya','🇷🇴 Romanya','🇧🇬 Bulgaristan','🇸🇰 Slovakya','🇨🇳 Çin','🇺🇸 Amerika'].map(o=>`<option>${o}</option>`).join('')}
+            ${['🇩🇪 Almanya','🇬🇧 İngiltere','🇫🇷 Fransa','🇮🇹 İtalya','🇪🇸 İspanya','🇳🇱 Hollanda','🇧🇪 Belçika','🇦🇹 Avusturya','🇨🇭 İsviçre','🇵🇹 Portekiz','🇬🇷 Yunanistan','🇸🇪 İsveç','🇳🇴 Norveç','🇩🇰 Danimarka','🇵🇱 Polonya','🇨🇿 Çekya','🇭🇺 Macaristan','🇮🇪 İrlanda','🇫🇮 Finlandiya','🇷🇴 Romanya','🇧🇬 Bulgaristan','🇸🇰 Slovakya','🇱🇹 Litvanya','🇱🇻 Letonya','🇪🇪 Estonya','🇨🇳 Çin','🇺🇸 Amerika'].map(o=>`<option>${o}</option>`).join('')}
           </select>
           <input class="fi2" type="text" id="new-ap-name-${c.id}" placeholder="Başvuran adı (boş=ana müşteri)" style="padding:5px;font-size:11px;grid-column:span 2">
           <input class="fi2" type="date" id="new-ap-date-${c.id}" style="padding:5px;font-size:11px">
@@ -5751,7 +5751,7 @@ async function uploadFile(customerId, input){
       const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'uploadFile',customerId,fileName:file.name,fileData:base64,fileType:file.type,token:CU.token})});
       const d=await res.json();
       if(!d.success){toast('Yükleme hatası','red');}
-      else{toast('✓ Dosya yüklendi','green');loadFiles(customerId);}
+      else{toast('✅ Dosya yüklendi','green');loadFiles(customerId);}
       if(btn){btn.disabled=false;btn.textContent='📎 Dosya Seç ve Yükle';}
       input.value='';
     };
@@ -5788,7 +5788,7 @@ async function addCompanion(id){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addCompanion',customerId:id,companionName:name,companionRelationship:relationship,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Eklenemedi'),'red');return;}
-    invalidateCache();await openPanel(id);toast('✓ Refakatçi eklendi','green');
+    invalidateCache();await openPanel(id);toast('✅ Refakatçi eklendi','green');
   }catch(e){handleError(e);}
 }
 async function removeCompanion(id,companionId){
@@ -5872,7 +5872,7 @@ async function updateCustomerInfo(id){
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
-    toast('✓ Müşteri bilgileri güncellendi','green');
+    toast('✅ Müşteri bilgileri kaydedildi','green');
   }catch(e){handleError(e);}
 }
 
@@ -5950,7 +5950,7 @@ async function updatePayment(id){
     }
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
-    toast('✓ Ödeme bilgileri güncellendi','green');
+    toast('✅ Ödeme bilgileri kaydedildi','green');
   }catch(e){handleError(e);}
 }
 
@@ -6118,7 +6118,7 @@ async function saveAppt(id){
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
-    toast(v?'📅 Randevu kaydedildi':'Randevu temizlendi','blue');
+    toast(v?'✅ Randevu kaydedildi':'Randevu temizlendi','blue');
   }catch(e){handleError(e);}
 }
 async function moveStatus(id,ns){
@@ -6127,10 +6127,12 @@ async function moveStatus(id,ns){
     const res=await fetch(EDGE_FUNCTION_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateCustomerStatus',customerId:id,newStatus:ns,token:CU.token})});
     const d=await res.json();
     if(!d.success){toast('⚠️ '+(d.error||'İşlem yapılamadı'),'red');return;}
-    invalidateCache();await loadCustomers(true);closePanel();
+    invalidateCache();await loadCustomers(true);
     if(document.getElementById('cust-tbody'))renderRows();
     if(document.getElementById('kanban'))renderPipeline();
-    toast('✓ Aşama: '+ns,'green');
+    toast('✅ Aşama değiştirildi: '+ns,'green');
+    // Paneli kapat değil, yenile
+    await openPanel(id, panelReadOnly);
   }catch(e){handleError(e);}
 }
 async function collectKalan(id, totalFee){
@@ -6164,7 +6166,7 @@ async function addCall(id){
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     invalidateCache();await loadCustomers(true);await openPanel(id);
     if(document.getElementById('cust-tbody'))renderRows();
-    toast('📞 Arama kaydedildi — '+RLABELS[r],'blue');
+    toast('✅ Arama kaydedildi — '+RLABELS[r],'blue');
   }catch(e){handleError(e);}
 }
 function filterNotes(custId){
@@ -6180,6 +6182,7 @@ async function saveNote(id){
     const d=await res.json();
     if(!d.success){toast('Hata: '+JSON.stringify(d.error||'Kaydedilemedi'),'red');return;}
     inp.value='';invalidateCache();await loadCustomers(true);await openPanel(id);
+    toast('✅ Not kaydedildi','green');
     if(document.getElementById('cust-tbody'))renderRows();
     toast('✓ Not kaydedildi','green');
   }catch(e){handleError(e);}
