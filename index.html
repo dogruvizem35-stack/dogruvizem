@@ -337,7 +337,7 @@ textarea.fi2{resize:vertical}
    MOBİL GÖRÜNÜM — 768px ve altı
    ============================================================ */
 @media(max-width:768px){
-  /* Sidebar gizle, üstten hamburger menü */
+  /* Sidebar */
   .sidebar{display:none;position:fixed;top:0;left:0;height:100vh;z-index:9000;width:260px;transform:translateX(-260px);transition:transform 0.3s}
   .sidebar.mobile-open{display:flex;transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.3)}
   .main-area{margin-left:0!important;width:100%}
@@ -346,35 +346,57 @@ textarea.fi2{resize:vertical}
   .topbar{padding:0 12px;gap:8px}
   #tb-search-wrap{display:none!important}
   .topbar .btn{font-size:12px;padding:6px 10px}
-  
-  /* Hamburger butonu */
   #mobile-menu-btn{display:flex!important}
   
-  /* Tablo yerine kart görünümü */
-  .tbl thead{display:none}
-  .tbl tr{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:12px}
-  .tbl td{border:none;padding:4px 0;font-size:13px}
-  .tbl td::before{content:attr(data-label);font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;display:block;margin-bottom:2px}
+  /* İçerik alanı */
+  .content{padding:12px!important}
   
-  /* Panel */
+  /* Tablo — mobilde scroll yerine gizle, sadece önemli kolonlar */
+  .tbl{width:100%}
+  .tbl-wrap{overflow-x:hidden}
+  /* Tablo scroll yerine kart görünümü — ama taşmayı engelle */
+  .tbl thead{display:none}
+  .tbl tr{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;padding:10px;width:100%;box-sizing:border-box}
+  .tbl td{border:none;padding:3px 0;font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  div[style*="overflow-x:auto"]{overflow-x:hidden!important}
+  
+  /* Panel — tam ekran */
   #detail-panel{width:100%!important;right:-100%!important}
   #detail-panel.open{right:0!important}
+  .ps{margin:0 0 8px 0}
   
-  /* Dashboard kartları */
-  .stats-grid{grid-template-columns:repeat(2,1fr)!important}
-  .stats-grid-5{grid-template-columns:repeat(2,1fr)!important}
+  /* Dashboard kartları — 1 sütun mobilde */
+  .stats-grid{grid-template-columns:1fr 1fr!important}
+  .stats-grid-5{grid-template-columns:1fr 1fr!important}
   
   /* Modal */
-  .modal-box{width:95vw!important;padding:18px!important}
+  .modal-box{width:95vw!important;max-height:85vh!important;padding:14px!important}
   
   /* Kanban */
-  .k-col{min-width:85vw!important;max-width:85vw!important}
+  .k-col{min-width:80vw!important;max-width:80vw!important}
   
-  /* Sayfa içi butonlar */
+  /* Toolbar */
   .tbl-toolbar{flex-wrap:wrap;gap:6px}
+  .tbl-toolbar .btn{font-size:11px;padding:5px 8px}
   
   /* Login */
-  .login-card{width:95vw!important;padding:28px 20px!important}
+  .login-card{width:95vw!important;padding:24px 16px!important}
+  
+  /* Kullanıcı kartları — butonlar dikey */
+  .user-card-btns{flex-direction:column!important;gap:4px!important}
+  .user-card-btns .btn{width:100%!important;justify-content:center}
+  
+  /* Form alanları */
+  .fi2{font-size:14px!important}
+  select.fi2,select.sel{font-size:14px!important}
+  
+  /* Filtre satırı */
+  .filter-row{flex-direction:column!important;gap:6px!important}
+  .filter-row select,.filter-row input{width:100%!important}
+  
+  /* Stat kartları metin */
+  .stat-val{font-size:20px!important}
+  .stat-label{font-size:11px!important}
 }
 
 /* Overlay — mobil menü açıkken arkaplanı karart */
@@ -5011,7 +5033,7 @@ async function renderUsers(){
           <div style="font-size:11px;color:var(--text3)">@${u.username}${isLocked?' · <span style="color:var(--red)">'+lockMins+' dk sonra açılır</span>':''}</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="user-card-btns" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         ${(CU.superAdmin&&!isMe&&!isSA)?roleSelect(u):`<span class="badge b-manager">${isSA?'⭐ Süper Admin':'Yönetici'}</span>`}
         ${(isLocked&&CU.superAdmin)?`<button class="btn btn-primary btn-sm" onclick="unlockUser('${u.username}')">🔓 Kilidi Aç</button>`:''}
         ${(CU.superAdmin&&!isMe)?`<button class="btn btn-ghost btn-sm" style="border:1px solid #A855F7;color:#7C3AED" onclick="impersonateUser('${u.username}')">👁 Görüntüle</button>`:''}
@@ -5033,7 +5055,7 @@ async function renderUsers(){
         <div class="av av-32" style="background:${ucolor};color:#fff">${initials(u.name)}</div>
         <div><div style="font-weight:600;font-size:13px">${u.name}${isLocked?' <span style="background:var(--red-bg);color:var(--red);font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;vertical-align:middle">🔒 KİLİTLİ</span>':''}</div><div style="font-size:11px;color:var(--text3)">@${u.username} · ${cnt} müşteri${isLocked?' · <span style="color:var(--red)">'+lockMins+' dk sonra açılır</span>':''}</div></div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="user-card-btns" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         ${(CU.role==='management')?roleSelect(u):`<span class="badge ${ROLE_BADGE_CLS[u.role]||'b-ops'}">${ROLE_LABELS[u.role]||u.role}</span>`}
         ${isLocked?`<button class="btn btn-primary btn-sm" onclick="unlockUser('${u.username}')">🔓 Kilidi Aç</button>`:''}
         ${CU.superAdmin?`<button class="btn btn-ghost btn-sm" style="border:1px solid #A855F7;color:#7C3AED" onclick="impersonateUser('${u.username}')">👁 Görüntüle</button>`:''}
