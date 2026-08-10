@@ -5703,7 +5703,7 @@ async function openPanel(id, readonly=false){
     <div class="ps-head"><div class="ps-title" style="color:var(--red)">⚠️ Tehlikeli Bölge</div></div>
     <div class="ps-body" style="display:flex;align-items:center;justify-content:space-between">
       <div style="font-size:12px;color:var(--text2)">Bu müşteriyi kalıcı olarak sil</div>
-      <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">🗑 Müşteriyi Sil</button>
+      ${CU.role==='management'?`<button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">🗑 Müşteriyi Sil</button>`:''}
     </div>
   </div>`:''}
   `}
