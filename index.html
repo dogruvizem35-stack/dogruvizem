@@ -5283,7 +5283,7 @@ async function openPanel(id, readonly=false){
 
   const ROLE_QBTNS={
     sales:['Sonra Ara','Ulaşılamıyor','İlgileniyor','İlgilenmiyor','İletişime Geçildi','Ödeme Alındı'],
-    evrak:['Ödeme Alındı','Belge Bekleniyor','Belgeler Tamam','Randevu Aranıyor','Randevu Alındı','Randevu Evrakları Hazırlanıyor','Randevu Evrakları Tamamlandı'],
+    evrak:['Ödeme Alındı','Belge Bekleniyor','Belgeler Tamam','Randevu Aranıyor','Randevu Alındı','Randevu Evrakları Hazırlanıyor','Randevu Evrakları Tamamlandı','Başvuru Yapıldı','Sonuç Bekleniyor','Tamamlandı','İptal'],
     randevu:['Randevu Evrakları Tamamlandı','Başvuru Yapıldı','Sonuç Bekleniyor','Tamamlandı','İptal'],
     management:['Sonra Ara','Ulaşılamıyor','İlgileniyor','İlgilenmiyor','İletişime Geçildi','Ödeme Alındı','Belge Bekleniyor','Belgeler Tamam','Randevu Aranıyor','Randevu Alındı','Randevu Evrakları Hazırlanıyor','Randevu Evrakları Tamamlandı','Başvuru Yapıldı','Sonuç Bekleniyor','Tamamlandı','İptal'],
   };
@@ -5673,7 +5673,7 @@ async function openPanel(id, readonly=false){
     </div>
   </div>
 
-  ${CU.role==='management'?`
+  ${(CU.role==='management'||CU.role==='evrak')?`
   <div class="ps">
     <div class="ps-head"><div class="ps-title">🔄 Temsilci Değiştir</div></div>
     <div class="ps-body">
