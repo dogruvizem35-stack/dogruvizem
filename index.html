@@ -6258,7 +6258,8 @@ async function addCustomer(){
         const warn=document.createElement('div');
         warn.id='nm-dup-warn';
         warn.style.cssText='background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#991B1B';
-        warn.innerHTML='❌ <b>Bu numara zaten kayıtlı!</b><br>'+esc(d.name)+' — '+esc(d.id)+' ('+esc(d.status)+')<br><button class="btn btn-ghost btn-sm" style="margin-top:6px;color:var(--accent)" onclick="closeModal();openPanel(''+d.id+'')">→ Mevcut kaydı aç</button>';
+        const dupId1=d.id;
+        warn.innerHTML='❌ <b>Bu numara zaten kayıtlı!</b><br>'+esc(d.name)+' — '+esc(d.id)+' ('+esc(d.status)+')<br><button class="btn btn-ghost btn-sm" style="margin-top:6px;color:var(--accent)" onclick="closeModal();openPanel(this.dataset.id)" data-id="'+esc(d.id)+'">→ Mevcut kaydı aç</button>';
         const firstFg=document.querySelector('#nm-form .fg');
         if(firstFg)firstFg.parentNode.insertBefore(warn,firstFg);
         return;
@@ -6273,7 +6274,7 @@ async function addCustomer(){
         const warn=document.createElement('div');
         warn.id='nm-dup-warn';
         warn.style.cssText='background:#FFFBEB;border:1px solid #FDE047;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#854D0E';
-        warn.innerHTML='⚠️ <b>Benzer numara bulundu!</b><br>'+esc(d.name)+' — '+esc(d.id)+' ('+esc(d.phone)+')<br><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-ghost btn-sm" style="color:var(--accent)" onclick="closeModal();openPanel(''+d.id+'')">→ Mevcut kaydı aç</button><button class="btn btn-primary btn-sm" onclick="forceAddCustomer()">Yine de Kaydet</button></div>';
+        warn.innerHTML='⚠️ <b>Benzer numara bulundu!</b><br>'+esc(d.name)+' — '+esc(d.id)+' ('+esc(d.phone)+')<br><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-ghost btn-sm" style="color:var(--accent)" onclick="closeModal();openPanel(this.dataset.id)" data-id="'+esc(d.id)+'">→ Mevcut kaydı aç</button><button class="btn btn-primary btn-sm" onclick="forceAddCustomer()">Yine de Kaydet</button></div>';
         const firstFg=document.querySelector('#nm-form .fg');
         if(firstFg)firstFg.parentNode.insertBefore(warn,firstFg);
         return;
